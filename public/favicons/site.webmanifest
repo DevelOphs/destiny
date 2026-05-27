@@ -4,9 +4,9 @@
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Haru Fashion ",
-  "short_name": "Haru",
-  "description": "Discover affordable and fashionable men's and women's clothing online at Haru Fashion",
+  "name": "Destiny",
+  "short_name": "Destiny",
+  "description": "Descubre la colección exclusiva de Destiny. Distribución mayorista y moda premium de alta calidad por IJ Distribuidora.",
   "icons": [
     {
       "src": "/icon-192x192.png",

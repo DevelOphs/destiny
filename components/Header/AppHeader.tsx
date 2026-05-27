@@ -9,12 +9,12 @@ type Props = {
 
 // "Discover affordable and fashionable men's and women's clothing online at Haru Fashion. Free Returns ✓ 1000+ New Arrivals Dropped Daily."
 const defaultDesc =
-  "Haru Fashion e-commerce developed with Next.JS. Coded with 🖤 by Sat Naing (satnaing.dev).";
+  "Descubre la colección exclusiva de Destiny. Distribución mayorista y moda premium de alta calidad por IJ Distribuidora.";
 const defaultKeywords =
-  "Haru Fashion, Online Shop, E-commerce, Sat Naing, NextJS";
+  "Destiny, IJ Distribuidora, Moda Premium, Distribución Mayorista, Ropa, Ecuador, Elegancia, Ropa Táctica, Ropa Casual";
 
 const AppHeader: React.FC<Props> = ({
-  title = "Haru Fashion",
+  title = "Destiny - IJ Distribuidora",
   desc = defaultDesc,
   keywords = defaultKeywords,
 }) => {
