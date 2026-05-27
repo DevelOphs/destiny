@@ -30,10 +30,10 @@ const Custom404 = () => {
   );
 };
 
-export const getStaticProps: GetStaticProps = async ({ locale }) => {
+export const getStaticProps: GetStaticProps = async () => {
   return {
     props: {
-      messages: (await import(`../messages/common/${locale}.json`)).default,
+      messages: (await import(`../messages/common/es.json`)).default,
     },
   };
 };

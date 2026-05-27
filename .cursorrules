@@ -1,0 +1,94 @@
+# Destiny (IJ Distribuidora) - Reglas Clave de Desarrollo y Arquitectura
+
+Este archivo contiene las directrices fundamentales de diseño, modularidad y backend que rigen este repositorio. Léelas minuciosamente antes de proponer cambios, escribir código o compilar.
+
+---
+
+## 📐 1. Modularidad y SRP (Responsabilidad Única)
+*   **Límite Estricto de Líneas:** Mantén todos los archivos principales y componentes dentro de un rango de **200 a 500 líneas de código máximo**.
+*   **No a los "God Components":** Si una página o componente comienza a crecer (como ocurrió con la pasarela de pagos), fragmenta la lógica en subcomponentes modulares dentro de una carpeta dedicada (ej. `components/Checkout/*`) y orquesta el estado en el archivo principal.
+
+---
+
+## 🎨 2. Excelencia Visual y Estética Premium
+*   **Paleta de Colores de Marca:** Utiliza exclusivamente los colores corporativos definidos en `tailwind.config.js`:
+    *   `navy` (`#0B2545`): Azul profundo primario para headers, botones y branding.
+    *   `blue` (`#134074`): Azul Slate secundario para hovers, llamados a la acción y estados activos.
+    *   `lightnavy` (`#EEF4F8`): Fondo claro y suave para tarjetas y módulos alternos.
+*   **Cero Emojis y 100% SVG Vectoriales:** Queda prohibido el uso de emojis clásicos. Utiliza trazados SVG minimalistas y refinados para iconos, checks, candados y controles.
+*   **Tipografía de Alta Gama:** Títulos elegantes en `font-serif` (Playfair Display o Cinzel) y cuerpo en `font-sans` (Jost).
+
+---
+
+## ⚡ 3. Restricciones Técnicas de Tailwind v2 (Sin JIT)
+*   **Evita Valores Arbitrarios en Clases:** Dado que no está habilitado el modo JIT en Tailwind v2.1, clases como `h-[350px]`, `text-[10px]` o `ring-blue/10` **no compilarán**.
+*   **Solución:** 
+    *   Define clases personalizadas de altura o comportamiento en [styles/globals.css](file:///c:/xampp/htdocs/Destiny/haru-fashion/styles/globals.css) (ej. `.hero-carousel-height`).
+    *   Utiliza clases clásicas con opacidades estándar (`ring-blue ring-opacity-10`, `border-blue border-opacity-20`).
+    *   Usa atributos `style={{ ... }}` en React para valores de fuentes, espaciados exactos o fondos RGBA dinámicos.
+
+---
+
+## 🛡️ 4. Persistencia en Base de Datos Real (Prisma + PostgreSQL)
+*   **Prohibición de Persistencia en Ficheros Locales:** No utilices archivos JSON locales ni el sistema `fs` para operaciones CRUD, ya que la aplicación se desplegará en un entorno stateless Serverless.
+*   **Patrón Singleton en Prisma Client:** Para evitar saturar las conexiones (connection leaks) con Supabase en desarrollo y entornos Serverless debido al Hot Reload de Next.js, importa siempre Prisma desde la ruta aliada absoluta:
+    `import prisma from "@/lib/prisma";`
+
+---
+
+## 🔒 5. Seguridad Obligatoria en Mutaciones y Administración
+*   **Rutas Públicas Autorizadas:**
+    *   `GET /api/v1/products` y `GET /api/v1/products/[id]` (Consulta de catálogo).
+    *   `POST /api/v1/orders` (Crear pedido en checkout).
+    *   `POST /api/v1/contact` (Enviar lead en formulario).
+*   **Rutas Protegidas Estrictamente:**
+    *   Todas las mutaciones de catálogo (`POST`, `PUT`, `DELETE` en productos).
+    *   Toda consulta o mutación administrativa de órdenes (`GET`, `PUT`, `DELETE` en pedidos).
+    *   Toda consulta o mutación administrativa de leads (`GET`, `DELETE` en contactos).
+*   **Validación de Clave API:** Importa y ejecuta siempre el validador en la cabecera de las API Routes privadas:
+    `if (!validateAdminApiKey(req, res)) return;`
+    Valida la cabecera `X-API-KEY` contra la clave del servidor `ADMIN_API_KEY`.
+
+---
+
+## 🏷️ 6. Pruebas y SEO
+*   **SEO Automatizado:** Cada vista debe tener un título descriptivo y estructurado jerárquicamente con un único `<h1>`.
+*   **IDs de Testeo Únicos:** Asegura que los elementos interactivos cuenten con atributos `id` puros y únicos para pruebas automatizadas del navegador.
+## 7. Tipado Estricto (TypeScript & Prisma)
+Prohibición Absoluta de any: El uso de any está estrictamente prohibido. Todo componente, función o hook debe tener sus interfaces o tipos bien definidos.
+
+Aprovechamiento de Tipos de Prisma: No reescribas interfaces para los modelos de la base de datos. Importa los tipos generados automáticamente (import { Product, Order } from '@prisma/client') para mantener una única fuente de verdad.
+
+Tipado de Respuestas de API: Las llamadas a fetch deben castear la respuesta a una interfaz específica que coincida con lo que devuelve el backend.
+
+## 8. Rendimiento Obligatorio (Lighthouse / Core Web Vitals)
+Imágenes Optimizadas: Queda prohibido el uso de la etiqueta HTML nativa <img>. Toda fotografía del catálogo o banner debe utilizar el componente <Image> de next/image con los atributos width y height obligatorios (o layout="fill" en Tailwind v2) para evitar el Layout Shift (CLS).
+
+Carga Diferida (Lazy Loading): Los componentes pesados que no sean visibles en la primera pantalla (como el modal de pago de tarjeta de crédito o el footer) deben cargarse dinámicamente usando next/dynamic.
+
+## 9. Validación de Formularios y Estados
+Control de Formularios Complejos: Para vistas complejas como el Checkout o la creación de productos en el panel admin, evita gestionar cada input con un useState individual para prevenir re-renders masivos.
+
+Esquemas de Validación: La validación de datos sensibles (tarjetas, emails, precios) debe hacerse primero en el frontend antes de tocar la API, preferiblemente apoyándose en esquemas sólidos para evitar enviar basura a la base de datos.
+
+## 10. Directivas de Comportamiento para el Agente (IA)
+*   **Sin Código Oculto:** Al refactorizar o entregar código nuevo, la IA tiene prohibido usar comentarios como `// ... resto del código ...`. Debe entregar el componente completo y listo para copiar/pegar para evitar errores de sintaxis.
+*   **Idioma de Comentarios:** Todo el código debe estar escrito en inglés (nombres de variables, funciones, etc.), pero los comentarios explicativos y los commits deben mantenerse en español corporativo.
+
+---
+
+## 🛡️ 11. Manejo Resiliente de Errores e Interfaz de Carga (UX/UI)
+*   **Estados de Carga:** Todas las páginas del panel admin deben mostrar indicadores visuales elegantes (`SkeletonLoader` o spinners con colores de la marca) mientras se cargan los datos de la base de datos.
+*   **Tratamiento de Errores:** Utiliza bloques `try-catch` en todas las peticiones asíncronas de la API y muestra notificaciones de error profesionales e informativas en español corporativo.
+
+---
+
+## 💬 12. Comunicación Directa B2B por WhatsApp
+*   **Formateo de Teléfonos:** El botón de contacto directo de WhatsApp debe analizar el teléfono del lead, formatear el prefijo de Ecuador (`+593` o `593`) y construir un enlace directo robusto: `https://wa.me/593[digitos]`.
+*   **Mensaje Pre-cargado:** Debe pre-cargar un saludo corporativo cordial en español que incluya el nombre del cliente y el asunto de su consulta de forma automatizada y sin emojis clásicos.
+
+---
+
+## 🔒 13. Seguridad y Persistencia de la Sesión Administrativa
+*   **Uso de sessionStorage:** La clave de acceso del administrador en `/admin` debe almacenarse temporalmente en `sessionStorage` bajo el nombre `admin_api_key`.
+*   **Cabecera de Petición:** Se debe adjuntar de forma obligatoria en la cabecera `x-api-key` de todas las peticiones asíncronas realizadas a endpoints administrativos protegidos.

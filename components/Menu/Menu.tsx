@@ -1,7 +1,5 @@
 import { Fragment, useState } from "react";
-import { Menu as HMenu } from "@headlessui/react";
 import Link from "next/link";
-import Image from "next/image";
 import { Dialog, Transition } from "@headlessui/react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/router";
@@ -11,7 +9,6 @@ import AuthForm from "../Auth/AuthForm";
 import WhistlistIcon from "../../public/icons/WhistlistIcon";
 import UserIcon from "../../public/icons/UserIcon";
 import SearchIcon from "../../public/icons/SearchIcon";
-import DownArrow from "../../public/icons/DownArrow";
 import InstagramLogo from "../../public/icons/InstagramLogo";
 import FacebookLogo from "../../public/icons/FacebookLogo";
 import { useWishlist } from "../../context/wishlist/WishlistProvider";
@@ -20,7 +17,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function Menu() {
   const t = useTranslations("Navigation");
   const router = useRouter();
-  const { asPath, locale } = router;
+  const { asPath } = router;
   const { wishlist } = useWishlist();
   const auth = useAuth();
   const [open, setOpen] = useState(false);
@@ -86,15 +83,14 @@ export default function Menu() {
                 className="relative opacity-95 overflow-y-auto inline-block dur h-screen w-full max-w-md overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl"
               >
                 <div className="flex justify-between items-center p-6 pb-0">
-                  <Link href="/">
-                    <a>
-                      <Image
-                        className="justify-center"
-                        src="/logo.svg"
-                        alt="Picture of the author"
-                        width={85}
-                        height={22}
-                      />
+                  <Link href="/#inicio">
+                    <a className="flex items-center space-x-2">
+                      <div className="flex items-center justify-center w-7 h-7 rounded-full border border-navy bg-white text-navy font-bold text-xs font-serif">
+                        IJ
+                      </div>
+                      <span className="text-xs font-black tracking-widest text-navy leading-none font-serif">
+                        IJ DISTRIBUIDORA
+                      </span>
                     </a>
                   </Link>
                   <button
@@ -120,6 +116,14 @@ export default function Menu() {
                         onChange={handleChange}
                       />
                     </form>
+                    <Link href="/#seccion-catalogo">
+                      <a
+                        className="w-full text-xl hover:bg-gray100 text-left py-2 font-semibold text-navy"
+                        onClick={closeModal}
+                      >
+                        Productos
+                      </a>
+                    </Link>
                     <Link href="/product-category/men">
                       <a
                         className="w-full text-xl hover:bg-gray100 text-left py-2"
@@ -152,7 +156,7 @@ export default function Menu() {
                         {t("blogs")}
                       </a>
                     </Link>
-                    <Link href="/about">
+                    <Link href="/#seccion-sobre-nosotros">
                       <a
                         className="w-full text-xl hover:bg-gray100 text-left py-2"
                         onClick={closeModal}
@@ -193,95 +197,7 @@ export default function Menu() {
                     </Link>
                     <hr className="border border-gray300 w-full" />
 
-                    {/* Locale Dropdown */}
-                    <HMenu
-                      as="div"
-                      className="relative bg-gray100 mt-4 mb-2 w-full"
-                    >
-                      <HMenu.Button
-                        as="a"
-                        href="#"
-                        className="flex justify-center items-center py-2 px-4 text-center"
-                      >
-                        {locale === "en" ? t("english") : t("myanmar")}{" "}
-                        <DownArrow />
-                      </HMenu.Button>
-                      <HMenu.Items
-                        className="flex flex-col w-full right-0 absolute p-1 border border-gray200 bg-white mt-2 outline-none"
-                        style={{ zIndex: 9999 }}
-                      >
-                        <HMenu.Item>
-                          <Link href={asPath} locale="en">
-                            <a
-                              className={`${
-                                locale === "en"
-                                  ? "bg-gray200 text-gray500"
-                                  : "bg-white text-gray500"
-                              } py-2 px-4 text-center focus:outline-none`}
-                            >
-                              {t("english")}
-                            </a>
-                          </Link>
-                        </HMenu.Item>
-                        <HMenu.Item>
-                          <Link href={asPath} locale="my">
-                            <a
-                              className={`${
-                                locale === "my"
-                                  ? "bg-gray200 text-gray500"
-                                  : "bg-white text-gray500"
-                              } py-2 px-4 text-center focus:outline-none`}
-                            >
-                              {t("myanmar")}
-                            </a>
-                          </Link>
-                        </HMenu.Item>
-                      </HMenu.Items>
-                    </HMenu>
 
-                    {/* Currency Dropdown */}
-                    <HMenu as="div" className="relative bg-gray100 my-2 w-full">
-                      <HMenu.Button
-                        as="a"
-                        href="#"
-                        className="flex justify-center items-center py-2 px-4 text-center"
-                      >
-                        {t("usd")} <DownArrow />
-                      </HMenu.Button>
-                      <HMenu.Items
-                        className="flex flex-col w-full right-0 absolute p-1 border border-gray200 bg-white mt-2 outline-none"
-                        style={{ zIndex: 9999 }}
-                      >
-                        <HMenu.Item>
-                          {({ active }) => (
-                            <a
-                              href="#"
-                              className={`${
-                                active
-                                  ? "bg-gray100 text-gray500"
-                                  : "bg-white text-gray500"
-                              } py-2 px-4 text-center focus:outline-none`}
-                            >
-                              {t("usd")}
-                            </a>
-                          )}
-                        </HMenu.Item>
-                        <HMenu.Item>
-                          {({ active }) => (
-                            <a
-                              href="#"
-                              className={`${
-                                active
-                                  ? "bg-gray100 text-gray500"
-                                  : "bg-white text-gray500"
-                              } py-2 px-4 text-center focus:outline-none`}
-                            >
-                              {t("mmk")}
-                            </a>
-                          )}
-                        </HMenu.Item>
-                      </HMenu.Items>
-                    </HMenu>
 
                     <div className="flex my-10 w-2/5 space-x-6 justify-center">
                       <a

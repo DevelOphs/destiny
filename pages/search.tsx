@@ -98,7 +98,7 @@ export const getServerSideProps: GetServerSideProps = async ({
 
   return {
     props: {
-      messages: (await import(`../messages/common/${locale}.json`)).default,
+      messages: (await import(`../messages/common/${locale || "es"}.json`)).default,
       items,
       searchWord: q,
     },

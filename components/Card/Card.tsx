@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -32,6 +32,23 @@ const Card: FC<Props> = ({ item }) => {
     alreadyWishlisted ? deleteWishlistItem!(item) : addToWishlist!(item);
   };
 
+  // Soporte de gestos táctiles (Swipe/Deslizar) para dispositivos móviles como Android/iOS (estilo Hugo Boss)
+  const touchStartX = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const difference = touchStartX.current - touchEndX;
+
+    // Si el usuario desliza horizontalmente más de 40px, alternamos la imagen (frente / reverso)
+    if (Math.abs(difference) > 40) {
+      setIsHovered((prev) => !prev);
+    }
+  };
+
   return (
     <div className={styles.card}>
       <div className={styles.imageContainer}>
@@ -40,26 +57,42 @@ const Card: FC<Props> = ({ item }) => {
             tabIndex={-1}
             onMouseOver={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="block relative overflow-hidden select-none"
           >
-            {!isHovered && (
-              <Image
-                src={img1 as string}
-                alt={name}
-                width={230}
-                height={300}
-                layout="responsive"
-              />
-            )}
-            {isHovered && (
-              <Image
-                className="transition-transform transform hover:scale-110 duration-1000"
-                src={img2 as string}
-                alt={name}
-                width={230}
-                height={300}
-                layout="responsive"
-              />
-            )}
+            {/* Contenedor relativo para el efecto de escala y crossfade */}
+            <div className="relative overflow-hidden w-full h-full">
+              {/* Imagen frontal (Base) */}
+              <div className={`transform transition-all duration-700 ease-in-out ${isHovered ? "scale-102 opacity-90" : "scale-100 opacity-100"}`}>
+                <Image
+                  src={img1 as string}
+                  alt={name}
+                  width={230}
+                  height={300}
+                  layout="responsive"
+                  priority
+                />
+              </div>
+
+              {/* Imagen trasera (Reverso) con disolvencia suave y zoom premium */}
+              {img2 && (
+                <div
+                  className={`absolute inset-0 w-full h-full transform transition-all duration-700 ease-in-out ${
+                    isHovered
+                      ? "opacity-100 scale-105 pointer-events-auto"
+                      : "opacity-0 scale-100 pointer-events-none"
+                  }`}
+                >
+                  <Image
+                    src={img2 as string}
+                    alt={`${name} - Reverso`}
+                    layout="fill"
+                    objectFit="cover"
+                  />
+                </div>
+              )}
+            </div>
           </a>
         </Link>
         <button

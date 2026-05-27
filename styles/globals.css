@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Jost:wght@100;200;300;400;500;600;700;800;900&display=swap");
+html {
+  scroll-behavior: smooth;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Jost:wght@100;200;300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Cinzel:wght@400..900&display=swap");
 @import "styles.css";
 
 @layer components {
@@ -179,6 +183,19 @@ a {
   text-decoration: none;
 }
 
-* {
-  box-sizing: border-box;
-} */
+
+/* Custom Hero Carousel Height Utilities (Fix for Tailwind v2 non-JIT) */
+.hero-carousel-height {
+  height: 350px;
+}
+@media (min-width: 576px) {
+  .hero-carousel-height {
+    height: 480px;
+  }
+}
+@media (min-width: 992px) {
+  .hero-carousel-height {
+    height: 520px;
+  }
+}
+

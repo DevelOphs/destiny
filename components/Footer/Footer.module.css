@@ -1,22 +1,21 @@
 .footerHead {
-  @apply text-gray400 text-lg mb-1 md:mb-3;
+  @apply text-navy font-bold text-xs uppercase tracking-widest mb-2 md:mb-4 font-serif;
 }
 
 .column {
   @apply flex flex-col;
 }
 
-.column a:hover {
-  @apply text-gray400 underline;
+.column a {
+  @apply py-1 text-xs text-gray400 hover:text-navy hover:underline transition-colors duration-200;
 }
 
-.column a,
 .column span {
-  @apply py-2;
+  @apply py-1 text-xs text-gray400;
 }
 
 .footerContainer {
-  @apply border-t-2 border-gray100 py-16;
+  @apply border-t border-gray100 py-8 md:py-10 bg-white;
 }
 
 .footerContents {
@@ -24,13 +23,13 @@
 }
 
 .footerContainer > div {
-  @apply mb-6 md:mb-0;
+  @apply mb-4 md:mb-0;
 }
 
 .bottomFooter {
-  @apply border-2 py-1 text-xs border-gray200 text-gray400;
+  @apply border-t border-gray100 py-4 text-xs text-gray400 bg-lightnavy;
 }
 
 .bottomFooter a {
-  @apply ml-4;
+  @apply ml-4 transition-colors duration-200;
 }

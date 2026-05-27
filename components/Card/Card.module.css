@@ -1,23 +1,77 @@
 .card {
-  @apply w-full;
+  width: 100%;
+  position: relative; /* Obligatorio para que el botón no se salga de la tarjeta */
+  overflow: hidden; /* Oculta el botón cuando está abajo en versión PC */
 }
 
 .imageContainer {
-  @apply relative overflow-hidden mb-1;
+  position: relative;
+  margin-bottom: 0.25rem;
+  overflow: hidden; /* Oculta el botón deslizante en PC de forma impecable */
+  border-radius: 6px; /* Bordes suaves premium */
 }
 
+/* 1. DISEÑO PARA CELULARES (Por defecto) */
 .addBtn {
-  @apply hidden sm:block bg-white text-gray400 hover:text-gray100 hover:bg-gray500 font-medium whitespace-nowrap px-4 py-2 mx-auto absolute bottom-4 md:-bottom-10 right-1/2 transform translate-x-1/2 transition-all duration-500;
+  display: block; /* Siempre visible */
+  background-color: #FFFFFF; /* Blanco limpio */
+  color: #0B2545; /* Azul marino corporativo */
+  border: 1px solid #0B2545; /* Borde marino fino */
+  font-weight: 600;
+  text-align: center;
+  padding: 0.6rem 1rem;
+  width: 100%; /* Ocupa todo el ancho en móvil */
+  position: absolute;
+  bottom: 0; /* Pegado abajo en la foto */
+  left: 0;
+  cursor: pointer;
+  transition: all 300ms ease;
+  z-index: 10;
+  font-size: 0.8rem;
 }
 
-.addBtn:focus {
-  @apply bottom-8 duration-75;
-}
+/* 2. DISEÑO PARA COMPUTADORAS (Desktop) */
+@media (min-width: 548px) {
+  .addBtn {
+    width: auto;
+    bottom: -3rem; /* Lo escondemos debajo de la foto recortado por .imageContainer */
+    left: 50%;
+    transform: translateX(-50%); /* Lo centramos perfectamente */
+    border-radius: 9999px; /* Cápsula perfecta */
+    padding: 0.45rem 1.25rem; /* Más esbelto */
+    font-size: 0.75rem; /* Letra pequeña y distinguida */
+    white-space: nowrap; /* Evita que el texto salte de línea */
+    box-shadow: 0 4px 12px rgba(11, 37, 69, 0.15); /* Sombra flotante */
+    background-color: #FFFFFF;
+    color: #0B2545;
+    border: 1px solid #0B2545;
+  }
 
-.card:hover .addBtn {
-  @apply md:bottom-8;
+  /* El efecto de subir solo ocurre al pasar el mouse en PC */
+  .card:hover .addBtn {
+    bottom: 1rem;
+  }
+  
+  .addBtn:hover {
+    background-color: #0B2545; /* Invierte a marino */
+    color: #FFFFFF; /* Texto blanco */
+    border-color: #0B2545;
+  }
 }
 
 .itemName {
-  @apply text-xs sm:text-base block no-underline text-gray500 mb-1 truncate;
+  font-size: 0.85rem;
+  display: block;
+  text-decoration: none;
+  color: #282828;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 576px) {
+  .itemName {
+    font-size: 1rem;
+  }
 }

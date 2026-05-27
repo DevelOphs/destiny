@@ -1,0 +1,79 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  status      Int       @default(1) // 1 = activo, 0 = eliminado lógicamente
+  products    Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Float
+  detail      String
+  description String
+  image1      String
+  image2      String
+  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId  Int
+  status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  orderNumber     Int      @id // Código numérico único de 6 dígitos
+  customerId      Int      @default(1)
+  customerName    String?  @default("Cliente Destiny")
+  customerEmail   String?  @default("cliente@destiny.com")
+  customerPhone   String?  @default("+593")
+  shippingAddress String
+  orderDate       DateTime @default(now())
+  paymentType     String   // "CASH_ON_DELIVERY", "BANK_TRANSFER", etc.
+  deliveryType    String   // "STORE_PICKUP", "QUITO", "PROVINCIAS"
+  totalPrice      Float
+  deliveryDate    DateTime
+  products        Json     // Lista estructurada de productos comprados: [{id: 100, quantity: 2}]
+  sendEmail       Boolean  @default(false)
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  subtitle  String?
+  imageUrl  String   // Ruta de la imagen (ej: /bg-img/destiny_hero_banner.png)
+  link      String?  // Enlace opcional (ej: /product-category/new-arrivals)
+  order     Int      @default(0) // Orden visual en el carrusel
+  status    Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
+  createdAt DateTime @default(now())
+}
+
+model FashionLine {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Ej. Casual, Noche, Militar, Policial
+  tagline     String?  // Ej. Día a Día, Elegante, Táctico, Seguridad
+  imageUrl    String   // Imagen del modelo o fondo
+  link        String   // Redirección de categoría (ej: /product-category/men)
+  status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
+  createdAt   DateTime @default(now())
+}
+

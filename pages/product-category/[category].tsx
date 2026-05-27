@@ -102,57 +102,74 @@ export const getServerSideProps: GetServerSideProps = async ({
   query: { page = 1, orderby = "latest" },
 }) => {
   const paramCategory = params!.category as string;
-
   const start = +page === 1 ? 0 : (+page - 1) * 10;
 
-  let numberOfProducts = 0;
+  try {
+    const prisma = (await import("@/lib/prisma")).default;
 
-  if (paramCategory !== "new-arrivals") {
-    const numberOfProductsResponse = await axios.get(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/count?category=${paramCategory}`
-    );
-    numberOfProducts = +numberOfProductsResponse.data.count;
-  } else {
-    numberOfProducts = 10;
+    // 1. Contar y filtrar usando Prisma
+    const whereClause: any = { status: 1 };
+    if (paramCategory !== "new-arrivals") {
+      whereClause.category = {
+        name: {
+          equals: paramCategory,
+          mode: "insensitive"
+        },
+        status: 1
+      };
+    }
+
+    const numberOfProducts = await prisma.product.count({
+      where: whereClause
+    });
+
+    // 2. Ordenación
+    let orderByClause: any = { createdAt: "desc" };
+    if (orderby === "price") {
+      orderByClause = { price: "asc" };
+    } else if (orderby === "price-desc") {
+      orderByClause = { price: "desc" };
+    }
+
+    // 3. Consulta paginada a base de datos real
+    const dbProducts = await prisma.product.findMany({
+      where: whereClause,
+      orderBy: orderByClause,
+      skip: start,
+      take: 10,
+      include: { category: true }
+    });
+
+    const items = dbProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      img1: p.image1,
+      img2: p.image2,
+      categoryName: p.category.name,
+    }));
+
+    return {
+      props: {
+        messages: (await import(`../../messages/common/${locale || "es"}.json`)).default,
+        items,
+        numberOfProducts,
+        page: +page,
+        orderby,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching products in dynamic category:", error);
+    return {
+      props: {
+        messages: (await import(`../../messages/common/${locale || "es"}.json`)).default,
+        items: [],
+        numberOfProducts: 0,
+        page: +page,
+        orderby,
+      },
+    };
   }
-
-  let order_by: string;
-
-  if (orderby === "price") {
-    order_by = "price";
-  } else if (orderby === "price-desc") {
-    order_by = "price.desc";
-  } else {
-    order_by = "createdAt.desc";
-  }
-
-  const reqUrl =
-    paramCategory === "new-arrivals"
-      ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products?order_by=createdAt.desc&limit=10`
-      : `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products?order_by=${order_by}&offset=${start}&limit=10&category=${paramCategory}`;
-
-  const res = await axios.get(reqUrl);
-
-  const fetchedProducts = res.data.data.map((product: apiProductsType) => ({
-    ...product,
-    img1: product.image1,
-    img2: product.image2,
-  }));
-
-  let items: apiProductsType[] = [];
-  fetchedProducts.forEach((product: apiProductsType) => {
-    items.push(product);
-  });
-
-  return {
-    props: {
-      messages: (await import(`../../messages/common/${locale}.json`)).default,
-      items,
-      numberOfProducts,
-      page: +page,
-      orderby,
-    },
-  };
 };
 
 const SortMenu: React.FC<{ orderby: OrderType }> = ({ orderby }) => {

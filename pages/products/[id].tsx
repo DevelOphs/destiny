@@ -16,6 +16,7 @@ import GhostButton from "../../components/Buttons/GhostButton";
 import Button from "../../components/Buttons/Button";
 import Card from "../../components/Card/Card";
 
+
 // swiperjs
 import { Swiper, SwiperSlide } from "swiper/react";
 
@@ -309,53 +310,84 @@ export const getServerSideProps: GetServerSideProps = async ({
   params,
   locale,
 }) => {
-  const paramId = params!.id as string;
-  const res = await axios.get(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products/${paramId}?include=category`
-  );
-  const fetchedProduct: apiProductsType = res.data.data;
+  const paramId = parseInt(params!.id as string, 10);
+  if (isNaN(paramId)) {
+    return {
+      notFound: true,
+    };
+  }
 
-  let product: itemType = {
-    id: fetchedProduct.id,
-    name: fetchedProduct.name,
-    price: fetchedProduct.price,
-    detail: fetchedProduct.detail,
-    img1: fetchedProduct.image1,
-    img2: fetchedProduct.image2,
-    categoryName: fetchedProduct!.category!.name,
-  };
+  try {
+    const prisma = (await import("@/lib/prisma")).default;
 
-  // Might be temporary solution for suggested products
-  const randomProductRes = await axios.get(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/products?category=${product.categoryName}`
-  );
-  const fetchedProducts: apiProductsType[] = randomProductRes.data.data;
-
-  // Shuffle array
-  const shuffled = fetchedProducts.sort(() => 0.5 - Math.random());
-
-  // Get sub-array of first 5 elements after shuffled
-  let randomFetchedProducts = shuffled.slice(0, 5);
-
-  let products: itemType[] = [];
-  randomFetchedProducts.forEach((randomProduct: apiProductsType) => {
-    products.push({
-      id: randomProduct.id,
-      name: randomProduct.name,
-      price: randomProduct.price,
-      img1: randomProduct.image1,
-      img2: randomProduct.image2,
+    const fetchedProduct = await prisma.product.findFirst({
+      where: {
+        id: paramId,
+        status: 1,
+      },
+      include: {
+        category: true,
+      },
     });
-  });
 
-  // Pass data to the page via props
-  return {
-    props: {
-      product,
-      products,
-      messages: (await import(`../../messages/common/${locale}.json`)).default,
-    },
-  };
+    if (!fetchedProduct) {
+      return {
+        notFound: true,
+      };
+    }
+
+    let product: itemType = {
+      id: fetchedProduct.id,
+      name: fetchedProduct.name,
+      price: fetchedProduct.price,
+      detail: fetchedProduct.detail,
+      description: fetchedProduct.description,
+      img1: fetchedProduct.image1,
+      img2: fetchedProduct.image2,
+      categoryName: fetchedProduct.category.name,
+    };
+
+    // Get suggested products of the same category
+    const fetchedProducts = await prisma.product.findMany({
+      where: {
+        categoryId: fetchedProduct.categoryId,
+        status: 1,
+        id: {
+          not: fetchedProduct.id,
+        },
+      },
+    });
+
+    // Shuffle array
+    const shuffled = fetchedProducts.sort(() => 0.5 - Math.random());
+
+    // Get sub-array of first 5 elements after shuffled
+    let randomFetchedProducts = shuffled.slice(0, 5);
+
+    let products: itemType[] = [];
+    randomFetchedProducts.forEach((randomProduct) => {
+      products.push({
+        id: randomProduct.id,
+        name: randomProduct.name,
+        price: randomProduct.price,
+        img1: randomProduct.image1,
+        img2: randomProduct.image2,
+      });
+    });
+
+    return {
+      props: {
+        product,
+        products,
+        messages: (await import(`../../messages/common/${locale || "es"}.json`)).default,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+    return {
+      notFound: true,
+    };
+  }
 };
 
 export default Product;

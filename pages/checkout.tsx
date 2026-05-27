@@ -1,23 +1,32 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import axios from "axios";
-import Image from "next/image";
 import { GetStaticProps } from "next";
 
+// Importación de componentes estructurales de Header y Footer
 import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
-import Button from "../components/Buttons/Button";
+
+// Importación de utilerías matemáticas
 import { roundDecimal } from "../components/Util/utilFunc";
+
+// Importación de estados y contextos de Carrito y Autenticación
 import { useCart } from "../context/cart/CartProvider";
-import Input from "../components/Input/Input";
 import { itemType } from "../context/wishlist/wishlist-type";
 import { useAuth } from "../context/AuthContext";
 
-// let w = window.innerWidth;
-type PaymentType = "CASH_ON_DELIVERY" | "BANK_TRANSFER";
-type DeliveryType = "STORE_PICKUP" | "YANGON" | "OTHERS";
+// Importación de Subcomponentes Modulares de Checkout (SRP & <500 lineas de código)
+import CheckoutForm from "../components/Checkout/CheckoutForm";
+import BankAccountsCard from "../components/Checkout/BankAccountsCard";
+import OrderSummary from "../components/Checkout/OrderSummary";
+import OrderSuccess from "../components/Checkout/OrderSuccess";
+import CreditCardModal from "../components/Checkout/CreditCardModal";
 
-type Order = {
+// Declaración de tipos estrictos
+type PaymentType = "CASH_ON_DELIVERY" | "BANK_TRANSFER" | "WHATSAPP_QUOTE" | "PAYPHONE_CARD";
+type DeliveryType = "STORE_PICKUP" | "QUITO" | "PROVINCIAS";
+
+interface Order {
   orderNumber: number;
   customerId: number;
   shippingAddress: string;
@@ -30,17 +39,25 @@ type Order = {
   deliveryType: DeliveryType;
   totalPrice: number;
   deliveryDate: string;
-};
+}
 
 const ShoppingCart = () => {
+  // ==========================================
+  // ESTADOS Y CONTEXTOS GLOBALES DE APLICACIÓN
+  // ==========================================
   const t = useTranslations("CartWishlist");
   const { cart, clearCart } = useCart();
   const auth = useAuth();
-  const [deli, setDeli] = useState<DeliveryType>("STORE_PICKUP");
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentType>("CASH_ON_DELIVERY");
 
-  // Form Fields
+  // ==========================================
+  // ESTADOS DE DESPACHO Y MÉTODOS DE PAGO
+  // ==========================================
+  const [deli, setDeli] = useState<DeliveryType>("STORE_PICKUP"); // Tipo de envío asignado
+  const [paymentMethod, setPaymentMethod] = useState<PaymentType>("CASH_ON_DELIVERY"); // Método de pago
+
+  // ==========================================
+  // ESTADOS DE DATOS DEL CLIENTE
+  // ==========================================
   const [name, setName] = useState(auth.user?.fullname || "");
   const [email, setEmail] = useState(auth.user?.email || "");
   const [phone, setPhone] = useState(auth.user?.phone || "");
@@ -48,23 +65,111 @@ const ShoppingCart = () => {
   const [diffAddr, setDiffAddr] = useState(false);
   const [address, setAddress] = useState(auth.user?.shippingAddress || "");
   const [shippingAddress, setShippingAddress] = useState("");
-  const [isOrdering, setIsOrdering] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-  const [orderError, setOrderError] = useState("");
-  const [sendEmail, setSendEmail] = useState(false);
 
+  // ==========================================
+  // ESTADOS DE FLUJO DE PEDIDO Y ERRORES
+  // ==========================================
+  const [isOrdering, setIsOrdering] = useState(false); // Bandera para procesar orden
+  const [errorMsg, setErrorMsg] = useState("");         // Errores de registro de usuario
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null); // Datos de orden exitosa
+  const [orderError, setOrderError] = useState("");     // Errores de transacciones
+  const [sendEmail, setSendEmail] = useState(false);    // Check de envío de factura fiscal
+
+  // ==========================================
+  // ESTADOS DE UI PREMIUM
+  // ==========================================
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false); // Apertura de modal PayPhone
+  const [copiedBank, setCopiedBank] = useState<string | null>(null); // Copiado rápido bancario
+
+  // ==========================================
+  // CÓMPUTOS Y VALIDACIONES EN TIEMPO REAL
+  // ==========================================
   const products = cart.map((item) => ({
     id: item.id,
+    name: item.name,
+    priceAtPurchase: item.price,
     quantity: item.qty,
   }));
 
+  const subtotal = roundDecimal(
+    cart.reduce(
+      (accumulator: number, currentItem: itemType) =>
+        accumulator + currentItem.price * currentItem.qty!,
+      0
+    )
+  );
+
+  let deliFee = 0;
+  if (deli === "QUITO") {
+    deliFee = 2.0;
+  } else if (deli === "PROVINCIAS") {
+    deliFee = 7.0;
+  }
+
+  // Verifica si el formulario base está debidamente relleno
+  const isFormFilled = (): boolean => {
+    const baseValid = name !== "" && email !== "" && phone !== "" && address !== "";
+    if (!auth.user) {
+      return baseValid && password !== "";
+    }
+    return baseValid;
+  };
+
+  const disableOrder = !isFormFilled() || isOrdering;
+
+  // ==========================================
+  // DISPATCHER DE COMPRAS CORPORATIVAS POR WHATSAPP B2B
+  // ==========================================
+  const handleWhatsAppQuote = () => {
+    const formattedProducts = cart
+      .map(
+        (item, idx) =>
+          `${idx + 1}. *${item.name}* (x${item.qty} un.) - P. Unitario: $${item.price} USD`
+      )
+      .join("\n");
+
+    const message =
+      `*SOLICITUD DE COTIZACIÓN - DESTINY / IJ DISTRIBUIDORA*\n\n` +
+      `*Cliente / Razón Social:* ${name}\n` +
+      `*Correo Electrónico:* ${email}\n` +
+      `*Teléfono de Contacto:* ${phone}\n` +
+      `*Dirección de Entrega:* ${shippingAddress ? shippingAddress : address}\n\n` +
+      `*Detalle del Pedido Mayorista:*\n${formattedProducts}\n\n` +
+      `*Cargos de Envío:* $${deliFee} USD (${deli === "STORE_PICKUP" ? "Retiro en Bodega" : deli === "QUITO" ? "Entrega en Quito" : "Envío a Provincias"})\n` +
+      `*Monto Estimado Total:* $${roundDecimal(+subtotal + deliFee)} USD\n\n` +
+      `*¡Hola! Requiero cotización formal y tiempos de entrega para este requerimiento.*`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/593961044435?text=${encodedMessage}`;
+
+    clearCart!();
+    window.open(whatsappUrl, "_blank");
+
+    setCompletedOrder({
+      orderNumber: Math.floor(Math.random() * 900000) + 100000,
+      customerId: auth.user?.id || 1,
+      shippingAddress: shippingAddress ? shippingAddress : address,
+      orderDate: new Date().toISOString(),
+      paymentType: "WHATSAPP_QUOTE",
+      deliveryType: deli,
+      totalPrice: Number(roundDecimal(+subtotal + deliFee)),
+      deliveryDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
+    });
+  };
+
+  // ==========================================
+  // EVENTOS DEL SISTEMA Y REGISTRO DE ÓRDENES
+  // ==========================================
   useEffect(() => {
     if (!isOrdering) return;
-
     setErrorMsg("");
 
-    // if not logged in, register the user
+    if (paymentMethod === "WHATSAPP_QUOTE") {
+      handleWhatsAppQuote();
+      setIsOrdering(false);
+      return;
+    }
+
     const registerUser = async () => {
       const regResponse = await auth.register!(
         email,
@@ -89,9 +194,12 @@ const ShoppingCart = () => {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
         {
-          customerId: auth!.user!.id,
+          customerId: auth!.user?.id || 1,
+          customerName: name,
+          customerEmail: email,
+          customerPhone: phone,
           shippingAddress: shippingAddress ? shippingAddress : address,
-          totalPrice: subtotal,
+          totalPrice: roundDecimal(+subtotal + deliFee),
           deliveryDate: new Date().setDate(new Date().getDate() + 7),
           paymentType: paymentMethod,
           deliveryType: deli,
@@ -105,11 +213,13 @@ const ShoppingCart = () => {
         setIsOrdering(false);
       } else {
         setOrderError("error_occurs");
+        setIsOrdering(false);
       }
     };
     if (auth.user) makeOrder();
   }, [isOrdering, completedOrder, auth.user]);
 
+  // Vincula los campos del formulario si existe una sesión de usuario activa
   useEffect(() => {
     if (auth.user) {
       setName(auth.user.fullname);
@@ -124,522 +234,139 @@ const ShoppingCart = () => {
     }
   }, [auth.user]);
 
-  let disableOrder = true;
 
-  if (!auth.user) {
-    disableOrder =
-      name !== "" &&
-      email !== "" &&
-      phone !== "" &&
-      address !== "" &&
-      password !== ""
-        ? false
-        : true;
-  } else {
-    disableOrder =
-      name !== "" && email !== "" && phone !== "" && address !== ""
-        ? false
-        : true;
-  }
 
-  let subtotal: number | string = 0;
-
-  subtotal = roundDecimal(
-    cart.reduce(
-      (accumulator: number, currentItem: itemType) =>
-        accumulator + currentItem.price * currentItem!.qty!,
-      0
-    )
-  );
-
-  let deliFee = 0;
-  if (deli === "YANGON") {
-    deliFee = 2.0;
-  } else if (deli === "OTHERS") {
-    deliFee = 7.0;
-  }
+  // Manejador del portapapeles para copiar cuentas bancarias B2B
+  const handleCopyAccount = (number: string, bankId: string) => {
+    navigator.clipboard.writeText(number);
+    setCopiedBank(bankId);
+    setTimeout(() => {
+      setCopiedBank(null);
+    }, 2500);
+  };
 
   return (
-    <div>
-      {/* ===== Head Section ===== */}
-      <Header title={`Shopping Cart - Haru Fashion`} />
+    <div className="bg-lightnavy font-sans text-gray500 min-h-screen" style={{ backgroundColor: 'rgba(238, 244, 248, 0.3)' }}>
+      <Header title={`Finalizar Pedido - Destiny`} />
 
-      <main id="main-content">
-        {/* ===== Heading & Continue Shopping */}
-        <div className="app-max-width px-4 sm:px-8 md:px-20 w-full border-t-2 border-gray100">
-          <h1 className="text-2xl sm:text-4xl text-center sm:text-left mt-6 mb-2 animatee__animated animate__bounce">
-            {t("checkout")}
+      <main id="main-content" className="pb-24">
+        {/* Encabezado Principal */}
+        <div className="app-max-width px-4 sm:px-8 md:px-20 w-full border-t border-gray100 bg-white shadow-sm py-4">
+          <h1 className="text-3xl font-bold font-serif text-navy tracking-wider uppercase text-center sm:text-left">
+            Finalizar Compra y Despacho
           </h1>
         </div>
 
-        {/* ===== Form Section ===== */}
+        {/* Stepper de Progreso */}
+        <div className="flex justify-between items-center max-w-xl mx-auto mb-10 mt-8 select-none font-sans px-4">
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${isOrdering || completedOrder ? "bg-navy text-white" : "bg-blue text-white ring-4 ring-lightnavy"}`}>
+              1
+            </div>
+            <span className="font-bold mt-2 uppercase tracking-widest text-navy" style={{ fontSize: '10px' }}>Despacho</span>
+          </div>
+          <div className="flex-auto h-0.5 bg-gray200 mx-4 rounded-full"></div>
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${completedOrder ? "bg-navy text-white" : isCardModalOpen || paymentMethod === "PAYPHONE_CARD" ? "bg-blue text-white ring-4 ring-lightnavy" : "bg-gray-200 text-gray-400"}`}>
+              2
+            </div>
+            <span className="font-bold mt-2 uppercase tracking-widest text-gray-400" style={{ fontSize: '10px' }}>Pago Seguro</span>
+          </div>
+          <div className="flex-auto h-0.5 bg-gray200 mx-4 rounded-full"></div>
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${completedOrder ? "bg-green text-white ring-4 ring-lightgreen" : "bg-gray-200 text-gray-400"}`}>
+              3
+            </div>
+            <span className="font-bold mt-2 uppercase tracking-widest text-gray-400" style={{ fontSize: '10px' }}>Confirmación</span>
+          </div>
+        </div>
+
+        {/* Renderizado Condicional de Flujo de Checkout */}
         {!completedOrder ? (
-          <div className="app-max-width px-4 sm:px-8 md:px-20 mb-14 flex flex-col lg:flex-row">
-            <div className="h-full w-full lg:w-7/12 mr-8">
+          <div className="app-max-width px-4 sm:px-8 md:px-20 mb-16 flex flex-col lg:flex-row items-start gap-10">
+            {/* LADO IZQUIERDO: Formulario de Despacho e Información Bancaria B2B */}
+            <div className="w-full lg:w-7/12 flex flex-col gap-6">
               {errorMsg !== "" && (
-                <span className="text-red text-sm font-semibold">
-                  - {t(errorMsg)}
-                </span>
-              )}
-              <div className="my-4">
-                <label htmlFor="name" className="text-lg">
-                  {t("name")}
-                </label>
-                <Input
-                  name="name"
-                  type="text"
-                  extraClass="w-full mt-1 mb-2"
-                  border="border-2 border-gray400"
-                  value={name}
-                  onChange={(e) =>
-                    setName((e.target as HTMLInputElement).value)
-                  }
-                  required
-                />
-              </div>
-
-              <div className="my-4">
-                <label htmlFor="email" className="text-lg mb-1">
-                  {t("email_address")}
-                </label>
-                <Input
-                  name="email"
-                  type="email"
-                  readOnly={auth.user ? true : false}
-                  extraClass={`w-full mt-1 mb-2 ${
-                    auth.user ? "bg-gray100 cursor-not-allowed" : ""
-                  }`}
-                  border="border-2 border-gray400"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail((e.target as HTMLInputElement).value)
-                  }
-                  required
-                />
-              </div>
-
-              {!auth.user && (
-                <div className="my-4">
-                  <label htmlFor="password" className="text-lg">
-                    {t("password")}
-                  </label>
-                  <Input
-                    name="password"
-                    type="password"
-                    extraClass="w-full mt-1 mb-2"
-                    border="border-2 border-gray400"
-                    value={password}
-                    onChange={(e) =>
-                      setPassword((e.target as HTMLInputElement).value)
-                    }
-                    required
-                  />
+                <div className="bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-sm font-semibold py-3 px-4 rounded-xl">
+                  {t(errorMsg)}
                 </div>
               )}
+              
+              <CheckoutForm
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                phone={phone}
+                setPhone={setPhone}
+                password={password}
+                setPassword={setPassword}
+                address={address}
+                setAddress={setAddress}
+                diffAddr={diffAddr}
+                setDiffAddr={setDiffAddr}
+                shippingAddress={shippingAddress}
+                setShippingAddress={setShippingAddress}
+                isAuthUser={!!auth.user}
+                translationFunction={t}
+              />
 
-              <div className="my-4">
-                <label htmlFor="phone" className="text-lg">
-                  {t("phone")}
-                </label>
-                <Input
-                  name="phone"
-                  type="text"
-                  extraClass="w-full mt-1 mb-2"
-                  border="border-2 border-gray400"
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone((e.target as HTMLInputElement).value)
-                  }
-                  required
-                />
-              </div>
-
-              <div className="my-4">
-                <label htmlFor="address" className="text-lg">
-                  {t("address")}
-                </label>
-                <textarea
-                  aria-label="Address"
-                  className="w-full mt-1 mb-2 border-2 border-gray400 p-4 outline-none"
-                  rows={4}
-                  value={address}
-                  onChange={(e) =>
-                    setAddress((e.target as HTMLTextAreaElement).value)
-                  }
-                />
-              </div>
-
-              <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input
-                  type="checkbox"
-                  name="toggle"
-                  id="toggle"
-                  checked={diffAddr}
-                  onChange={() => setDiffAddr(!diffAddr)}
-                  className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-gray300 appearance-none cursor-pointer"
-                />
-                <label
-                  htmlFor="toggle"
-                  className="toggle-label block overflow-hidden h-6 rounded-full bg-gray300 cursor-pointer"
-                ></label>
-              </div>
-              <label htmlFor="toggle" className="text-xs text-gray-700">
-                {t("different_shipping_address")}
-              </label>
-
-              {diffAddr && (
-                <div className="my-4">
-                  <label htmlFor="shipping_address" className="text-lg">
-                    {t("shipping_address")}
-                  </label>
-                  <textarea
-                    id="shipping_address"
-                    aria-label="shipping address"
-                    className="w-full mt-1 mb-2 border-2 border-gray400 p-4 outline-none"
-                    rows={4}
-                    value={shippingAddress}
-                    onChange={(e) =>
-                      setShippingAddress(
-                        (e.target as HTMLTextAreaElement).value
-                      )
-                    }
+              {paymentMethod === "BANK_TRANSFER" && (
+                <div id="cuentas-bancarias" className="scroll-mt-24 animate__animated animate__fadeInUp">
+                  <BankAccountsCard
+                    copiedBank={copiedBank}
+                    onCopyAccount={handleCopyAccount}
                   />
-                </div>
-              )}
-
-              {!auth.user && (
-                <div className="text-sm text-gray400 mt-8 leading-6">
-                  {t("form_note")}
                 </div>
               )}
             </div>
-            <div className="h-full w-full lg:w-5/12 mt-10 lg:mt-4">
-              {/* Cart Totals */}
-              <div className="border border-gray500 p-6 divide-y-2 divide-gray200">
-                <div className="flex justify-between">
-                  <span className="text-base uppercase mb-3">
-                    {t("product")}
-                  </span>
-                  <span className="text-base uppercase mb-3">
-                    {t("subtotal")}
-                  </span>
-                </div>
 
-                <div className="pt-2">
-                  {cart.map((item) => (
-                    <div className="flex justify-between mb-2" key={item.id}>
-                      <span className="text-base font-medium">
-                        {item.name}{" "}
-                        <span className="text-gray400">x {item.qty}</span>
-                      </span>
-                      <span className="text-base">
-                        $ {roundDecimal(item.price * item!.qty!)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="py-3 flex justify-between">
-                  <span className="uppercase">{t("subtotal")}</span>
-                  <span>$ {subtotal}</span>
-                </div>
-
-                <div className="py-3">
-                  <span className="uppercase">{t("delivery")}</span>
-                  <div className="mt-3 space-y-2">
-                    <div className="flex justify-between">
-                      <div>
-                        <input
-                          type="radio"
-                          name="deli"
-                          value="STORE_PICKUP"
-                          id="pickup"
-                          checked={deli === "STORE_PICKUP"}
-                          onChange={() => setDeli("STORE_PICKUP")}
-                        />{" "}
-                        <label htmlFor="pickup" className="cursor-pointer">
-                          {t("store_pickup")}
-                        </label>
-                      </div>
-                      <span>Free</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <div>
-                        <input
-                          type="radio"
-                          name="deli"
-                          value="YANGON"
-                          id="ygn"
-                          checked={deli === "YANGON"}
-                          onChange={() => setDeli("YANGON")}
-                          // defaultChecked
-                        />{" "}
-                        <label htmlFor="ygn" className="cursor-pointer">
-                          {t("within_yangon")}
-                        </label>
-                      </div>
-                      <span>$ 2.00</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <div>
-                        <input
-                          type="radio"
-                          name="deli"
-                          value="OTHERS"
-                          id="others"
-                          checked={deli === "OTHERS"}
-                          onChange={() => setDeli("OTHERS")}
-                        />{" "}
-                        <label htmlFor="others" className="cursor-pointer">
-                          {t("other_cities")}
-                        </label>
-                      </div>
-                      <span>$ 7.00</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between py-3">
-                    <span>{t("grand_total")}</span>
-                    <span>$ {roundDecimal(+subtotal + deliFee)}</span>
-                  </div>
-
-                  <div className="grid gap-4 mt-2 mb-4">
-                    <label
-                      htmlFor="plan-cash"
-                      className="relative flex flex-col bg-white p-5 rounded-lg shadow-md border border-gray300 cursor-pointer"
-                    >
-                      <span className="font-semibold text-gray-500 text-base leading-tight capitalize">
-                        {t("cash_on_delivery")}
-                      </span>
-                      <input
-                        type="radio"
-                        name="plan"
-                        id="plan-cash"
-                        value="CASH_ON_DELIVERY"
-                        className="absolute h-0 w-0 appearance-none"
-                        onChange={() => setPaymentMethod("CASH_ON_DELIVERY")}
-                      />
-                      <span
-                        aria-hidden="true"
-                        className={`${
-                          paymentMethod === "CASH_ON_DELIVERY"
-                            ? "block"
-                            : "hidden"
-                        } absolute inset-0 border-2 border-gray500 bg-opacity-10 rounded-lg`}
-                      >
-                        <span className="absolute top-4 right-4 h-6 w-6 inline-flex items-center justify-center rounded-full bg-gray100">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="h-5 w-5 text-green-600"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
-                      </span>
-                    </label>
-                    <label
-                      htmlFor="plan-bank"
-                      className="relative flex flex-col bg-white p-5 rounded-lg shadow-md border border-gray300 cursor-pointer"
-                    >
-                      <span className="font-semibold text-gray-500 leading-tight capitalize">
-                        {t("bank_transfer")}
-                      </span>
-                      <span className="text-gray400 text-sm mt-1">
-                        {t("bank_transfer_desc")}
-                      </span>
-                      <input
-                        type="radio"
-                        name="plan"
-                        id="plan-bank"
-                        value="BANK_TRANSFER"
-                        className="absolute h-0 w-0 appearance-none"
-                        onChange={() => setPaymentMethod("BANK_TRANSFER")}
-                      />
-                      <span
-                        aria-hidden="true"
-                        className={`${
-                          paymentMethod === "BANK_TRANSFER" ? "block" : "hidden"
-                        } absolute inset-0 border-2 border-gray500 bg-opacity-10 rounded-lg`}
-                      >
-                        <span className="absolute top-4 right-4 h-6 w-6 inline-flex items-center justify-center rounded-full bg-gray100">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="h-5 w-5 text-green-600"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </span>
-                      </span>
-                    </label>
-                  </div>
-
-                  <div className="my-8">
-                    <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                      <input
-                        type="checkbox"
-                        name="send-email-toggle"
-                        id="send-email-toggle"
-                        checked={sendEmail}
-                        onChange={() => setSendEmail(!sendEmail)}
-                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-gray300 appearance-none cursor-pointer"
-                      />
-                      <label
-                        htmlFor="send-email-toggle"
-                        className="toggle-label block overflow-hidden h-6 rounded-full bg-gray300 cursor-pointer"
-                      ></label>
-                    </div>
-                    <label
-                      htmlFor="send-email-toggle"
-                      className="text-xs text-gray-700"
-                    >
-                      {t("send_order_email")}
-                    </label>
-                  </div>
-                </div>
-
-                <Button
-                  value={t("place_order")}
-                  size="xl"
-                  extraClass={`w-full`}
-                  onClick={() => setIsOrdering(true)}
-                  disabled={disableOrder}
-                />
-              </div>
-
-              {orderError !== "" && (
-                <span className="text-red text-sm font-semibold">
-                  - {orderError}
-                </span>
-              )}
+            {/* LADO DERECHO: Resumen de Pedido, Despacho y Envío */}
+            <div className="w-full lg:w-5/12 flex flex-col gap-6" id="seccion-resumen">
+              <OrderSummary
+                cart={cart}
+                subtotal={+subtotal}
+                deli={deli}
+                setDeli={setDeli}
+                deliFee={deliFee}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                sendEmail={sendEmail}
+                setSendEmail={setSendEmail}
+                disableOrder={disableOrder}
+                onOrderSubmit={() => {
+                  if (paymentMethod === "PAYPHONE_CARD") {
+                    setIsCardModalOpen(true);
+                  } else {
+                    setIsOrdering(true);
+                  }
+                }}
+                orderError={orderError}
+                translationFunction={t}
+              />
             </div>
           </div>
         ) : (
-          <div className="app-max-width px-4 sm:px-8 md:px-20 mb-14 mt-6">
-            <div className="text-gray400 text-base">{t("thank_you_note")}</div>
-
-            <div className="flex flex-col md:flex-row">
-              <div className="h-full w-full md:w-1/2 mt-2 lg:mt-4">
-                <div className="border border-gray500 p-6 divide-y-2 divide-gray200">
-                  <div className="flex justify-between">
-                    <span className="text-base uppercase mb-3">
-                      {t("order_id")}
-                    </span>
-                    <span className="text-base uppercase mb-3">
-                      {completedOrder.orderNumber}
-                    </span>
-                  </div>
-
-                  <div className="pt-2">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-base">{t("email_address")}</span>
-                      <span className="text-base">{auth.user?.email}</span>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-base">{t("order_date")}</span>
-                      <span className="text-base">
-                        {new Date(
-                          completedOrder.orderDate
-                        ).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-base">{t("delivery_date")}</span>
-                      <span className="text-base">
-                        {new Date(
-                          completedOrder.deliveryDate
-                        ).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="py-3">
-                    <div className="flex justify-between mb-2">
-                      <span className="">{t("payment_method")}</span>
-                      <span>{completedOrder.paymentType}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="">{t("delivery_method")}</span>
-                      <span>{completedOrder.deliveryType}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 flex justify-between mb-2">
-                    <span className="text-base uppercase">{t("total")}</span>
-                    <span className="text-base">
-                      $ {completedOrder.totalPrice}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-full w-full md:w-1/2 md:ml-8 mt-4 md:mt-2 lg:mt-4">
-                <div>
-                  {t("your_order_received")}
-                  {completedOrder.paymentType === "BANK_TRANSFER" &&
-                    t("bank_transfer_note")}
-                  {completedOrder.paymentType === "CASH_ON_DELIVERY" &&
-                    completedOrder.deliveryType !== "STORE_PICKUP" &&
-                    t("cash_delivery_note")}
-                  {completedOrder.deliveryType === "STORE_PICKUP" &&
-                    t("store_pickup_note")}
-                  {t("thank_you_for_purchasing")}
-                </div>
-
-                {completedOrder.paymentType === "BANK_TRANSFER" ? (
-                  <div className="mt-6">
-                    <h2 className="text-xl font-bold">
-                      {t("our_banking_details")}
-                    </h2>
-                    <span className="uppercase block my-1">Sat Naing :</span>
-
-                    <div className="flex justify-between w-full xl:w-1/2">
-                      <span className="text-sm font-bold">AYA Bank</span>
-                      <span className="text-base">20012345678</span>
-                    </div>
-                    <div className="flex justify-between w-full xl:w-1/2">
-                      <span className="text-sm font-bold">CB Bank</span>
-                      <span className="text-base">0010123456780959</span>
-                    </div>
-                    <div className="flex justify-between w-full xl:w-1/2">
-                      <span className="text-sm font-bold">KPay</span>
-                      <span className="text-base">095096051</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-center items-center h-56">
-                    <div className="w-3/4">
-                      <Image
-                        className="justify-center"
-                        src="/logo.svg"
-                        alt="Haru Fashion"
-                        width={220}
-                        height={50}
-                        layout="responsive"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <OrderSuccess
+            completedOrder={completedOrder}
+            name={name}
+            email={email}
+          />
         )}
       </main>
 
-      {/* ===== Footer Section ===== */}
+      {/* Modal Seguro de Tarjeta de Crédito */}
+      <CreditCardModal
+        isOpen={isCardModalOpen}
+        onClose={() => setIsCardModalOpen(false)}
+        subtotal={+subtotal}
+        deliFee={deliFee}
+        onConfirmPayment={() => {
+          setIsCardModalOpen(false);
+          setIsOrdering(true);
+        }}
+      />
+
       <Footer />
     </div>
   );
@@ -648,7 +375,7 @@ const ShoppingCart = () => {
 export const getStaticProps: GetStaticProps = async ({ locale }) => {
   return {
     props: {
-      messages: (await import(`../messages/common/${locale}.json`)).default,
+      messages: (await import(`../messages/common/${locale || "es"}.json`)).default,
     },
   };
 };

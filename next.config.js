@@ -3,10 +3,11 @@ const withPWA = require("next-pwa");
 module.exports = withPWA({
   // module.exports = {
   i18n: {
-    locales: ["en", "my"],
-    defaultLocale: "en",
+    locales: ["es"],
+    defaultLocale: "es",
   },
   reactStrictMode: true,
+  output: 'standalone',
   // swcMinify: true,
   compiler: {
     removeConsole: true,
@@ -17,7 +18,7 @@ module.exports = withPWA({
   pwa: {
     dest: "public",
     skipWaiting: true,
-    disable: process.env.NODE_ENV === "development",
+    disable: true,
   },
   // };
 });

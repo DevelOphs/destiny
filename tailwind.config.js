@@ -26,6 +26,16 @@ module.exports = {
         '"Segoe UI Symbol"',
         '"Noto Color Emoji"',
       ],
+      serif: [
+        "Playfair Display",
+        "Cinzel",
+        "Georgia",
+        "ui-serif",
+        "Cambria",
+        '"Times New Roman"',
+        "Times",
+        "serif",
+      ],
     },
     colors: {
       transparent: "transparent",
@@ -42,7 +52,9 @@ module.exports = {
       red: "#F05454",
       yellow: "#F5B461",
       green: "#9BDEAC",
-      blue: "#66BFBF",
+      blue: "#134074", // Slate Navy Secondary (replaces the old teal)
+      navy: "#0B2545", // Corporate Deep Navy Primary
+      lightnavy: "#EEF4F8", // Soft gray-blue background
       lightgreen: "#F2FDFB",
     },
     extend: {},
