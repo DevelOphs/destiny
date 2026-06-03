@@ -17,6 +17,8 @@ export type commonType = {
   stock?: number;
   createdAt?: string;
   updatedAt?: string | null;
+  colors?: string[];
+  selectedColor?: string;
   category?: {
     id?: number;
     name?: string;

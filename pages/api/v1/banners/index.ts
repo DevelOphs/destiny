@@ -13,10 +13,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const whereClause = isAdmin ? {} : { status: 1 };
 
-      const banners = await prisma.banner.findMany({
+      let banners = await prisma.banner.findMany({
         where: whereClause,
         orderBy: { order: "asc" }
       });
+
+      // Si no hay ningún banner en la base de datos, autogeneramos los por defecto
+      if (banners.length === 0) {
+        await prisma.banner.createMany({
+          data: [
+            { id: 1, title: "Colección Editorial Destiny", subtitle: "Moda que te define", imageUrl: "/bg-img/destiny_hero_banner.png", link: "/product-category/new-arrivals", order: 1, status: 1 },
+            { id: 2, title: "Colección Militar Táctico", subtitle: "Rendimiento y Resistencia", imageUrl: "/bg-img/tactical_model.png", link: "/product-category/bags", order: 2, status: 1 },
+            { id: 3, title: "Equipamiento de Seguridad y Policial", subtitle: "Protección Profesional", imageUrl: "/bg-img/police_model.png", link: "/product-category/men", order: 3, status: 1 },
+            { id: 4, title: "Colección Formal y Blazer Ejecutivo", subtitle: "Elegancia Corporativa", imageUrl: "/bg-img/elegant_model.png", link: "/product-category/men", order: 4, status: 1 },
+            { id: 5, title: "Chaqueta Cortaviento Dama Softshell", subtitle: "Estilo & Versatilidad", imageUrl: "/bg-img/female_model.png", link: "/product-category/women", order: 5, status: 1 },
+            { id: 6, title: "Hoodie Buzo Casual Beige", subtitle: "Confort Diario", imageUrl: "/bg-img/casual_model.png", link: "/product-category/men", order: 6, status: 1 }
+          ]
+        });
+        banners = await prisma.banner.findMany({
+          where: whereClause,
+          orderBy: { order: "asc" }
+        });
+      }
+
       res.status(200).json({ data: banners });
     } catch (error) {
       console.error("Error fetching banners:", error);

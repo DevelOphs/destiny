@@ -41,6 +41,30 @@ interface Order {
   deliveryDate: string;
 }
 
+const getColorName = (hex?: string) => {
+  if (!hex) return "";
+  const upperHex = hex.toUpperCase();
+  const names: Record<string, string> = {
+    "#4B5320": "Verde Oliva",
+    "#000000": "Negro",
+    "#C3B091": "Caqui / Tan",
+    "#FFFFFF": "Blanco",
+    "#FF0000": "Rojo",
+    "#0000FF": "Azul",
+    "#808080": "Gris",
+    "#008000": "Verde",
+    "#FFFF00": "Amarillo",
+    "#FFA500": "Naranja",
+    "#800080": "Morado",
+    "#A52A2A": "Marrón",
+    "#F0E68C": "Caqui Claro",
+    "#2E8B57": "Verde Mar",
+    "#1E90FF": "Azul Esquisto",
+    "#36454F": "Gris Carbón",
+  };
+  return names[upperHex] || upperHex;
+};
+
 const ShoppingCart = () => {
   // ==========================================
   // ESTADOS Y CONTEXTOS GLOBALES DE APLICACIÓN
@@ -89,6 +113,7 @@ const ShoppingCart = () => {
     name: item.name,
     priceAtPurchase: item.price,
     quantity: item.qty,
+    selectedColor: item.selectedColor,
   }));
 
   const subtotal = roundDecimal(
@@ -123,8 +148,10 @@ const ShoppingCart = () => {
   const handleWhatsAppQuote = () => {
     const formattedProducts = cart
       .map(
-        (item, idx) =>
-          `${idx + 1}. *${item.name}* (x${item.qty} un.) - P. Unitario: $${item.price} USD`
+        (item, idx) => {
+          const colorText = item.selectedColor ? ` - Color: ${getColorName(item.selectedColor)}` : "";
+          return `${idx + 1}. *${item.name}* (x${item.qty} un.)${colorText} - P. Unitario: $${item.price} USD`;
+        }
       )
       .join("\n");
 

@@ -28,6 +28,7 @@ model Product {
   categoryId  Int
   status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
   createdAt   DateTime @default(now())
+  colors      String[] @default([])
 }
 
 model Order {
@@ -76,4 +77,15 @@ model FashionLine {
   status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
   createdAt   DateTime @default(now())
 }
+
+model PromoCategory {
+  id             Int      @id @default(autoincrement())
+  title          String   @unique // Ej. Última Confección, Línea Corporativa Femenina, etc.
+  imageUrl       String   // Ruta de la imagen o URL de Supabase Storage
+  imageUrlTablet String?  // Imagen alternativa opcional para tablet/móvil
+  link           String   // Enlace de redirección
+  status         Int      @default(1) // 1 = activo, 0 = inactivo
+  createdAt      DateTime @default(now())
+}
+
 

@@ -17,6 +17,7 @@ interface Product {
     name: string;
     description: string;
   };
+  colors: string[];
 }
 
 export default function AdminProducts() {
@@ -38,6 +39,8 @@ export default function AdminProducts() {
   const [image1, setImage1] = useState("");
   const [image2, setImage2] = useState("");
   const [categoryName, setCategoryName] = useState("men");
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -66,6 +69,8 @@ export default function AdminProducts() {
     setImage1("");
     setImage2("");
     setCategoryName("men");
+    setColors([]);
+    setColorInput("");
     setEditingId(null);
     setIsEditMode(false);
   };
@@ -83,6 +88,8 @@ export default function AdminProducts() {
     setImage1(p.image1);
     setImage2(p.image2);
     setCategoryName(p.category.name);
+    setColors(p.colors || []);
+    setColorInput("");
     setEditingId(p.id);
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -108,6 +115,7 @@ export default function AdminProducts() {
       image1: image1 || "/bg-img/logo_scorpion.png",
       image2: image2 || image1 || "/bg-img/logo_scorpion.png",
       categoryName,
+      colors,
     };
 
     try {
@@ -218,6 +226,18 @@ export default function AdminProducts() {
                         <td className="p-4">
                           <div className="font-bold text-navy" style={{ color: "#0B2545" }}>{p.name}</div>
                           <div className="text-xs text-gray-400 max-w-xs truncate">{p.detail}</div>
+                          {p.colors && p.colors.length > 0 && (
+                            <div className="flex gap-1.5 mt-1.5 select-none">
+                              {p.colors.map((c) => (
+                                <span 
+                                  key={c}
+                                  className="w-3 h-3 rounded-full border border-gray-200 shadow-sm"
+                                  style={{ backgroundColor: c }}
+                                  title={c}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </td>
                         <td className="p-4">
                           <span className="text-[10px] font-bold py-0.5 px-2.5 rounded-full bg-blue/10 text-blue border border-blue/20 uppercase" style={{ color: "#134074", borderColor: "rgba(19, 64, 116, 0.2)", backgroundColor: "rgba(19, 64, 116, 0.1)" }}>
@@ -253,9 +273,9 @@ export default function AdminProducts() {
 
       {/* Modal Añadir / Editar Producto */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50 p-4 font-sans select-none" style={{ zIndex: 999999 }}>
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 border border-gray-100 animate__animated animate__zoomIn animate__faster">
-            <header className="flex justify-between items-center mb-6 border-b border-gray-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden">
+            <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
               <h3 className="text-xl font-bold font-serif text-navy uppercase tracking-wider" style={{ color: "#0B2545" }}>
                 {isEditMode ? "Editar Prenda" : "Añadir Nueva Prenda"}
               </h3>
@@ -267,85 +287,150 @@ export default function AdminProducts() {
               </button>
             </header>
 
-            <form onSubmit={handleFormSubmit} className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Comercial de la Prenda</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
-                  placeholder="Ej. Saco Softshell Cortaviento"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 overflow-y-auto flex-1 space-y-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Precio Unitario ($ USD)</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Nombre Comercial de la Prenda</label>
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
                     required
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
-                    placeholder="Ej. 65.00"
+                    placeholder="Ej. Saco Softshell Cortaviento"
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Precio Unitario ($ USD)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
+                      placeholder="Ej. 65.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría General</label>
+                    <select
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                      className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue bg-white"
+                    >
+                      <option value="men">Caballeros (men)</option>
+                      <option value="women">Damas (women)</option>
+                      <option value="bags">Táctico & Seguridad (bags)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría General</label>
-                  <select
-                    value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
-                    className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue bg-white"
-                  >
-                    <option value="men">Caballeros (men)</option>
-                    <option value="women">Damas (women)</option>
-                    <option value="bags">Táctico & Seguridad (bags)</option>
-                  </select>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Detalle Corto (Subtítulo)</label>
+                  <input
+                    type="text"
+                    required
+                    value={detail}
+                    onChange={(e) => setDetail(e.target.value)}
+                    className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
+                    placeholder="Ej. Costuras reforzadas e impermeabilidad certificada..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Descripción Detallada (Ficha Técnica)</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
+                    rows={2}
+                    placeholder="Detalles adicionales, materiales, telas, usos comerciales, etc."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    Colores Disponibles (Códigos HEX)
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={colorInput}
+                      onChange={(e) => setColorInput(e.target.value)}
+                      className="flex-1 border border-gray-300 p-2.5 rounded-xl text-sm outline-none focus:border-blue"
+                      placeholder="Ej. #4B5320 o #000000"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const hex = colorInput.trim();
+                        if (!hex) return;
+                        const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+                        if (!hexRegex.test(hex)) {
+                          alert("Formato de color inválido. Debe comenzar con '#' y tener 3 o 6 caracteres hexadecimales (Ej: #4B5320).");
+                          return;
+                        }
+                        if (colors.includes(hex)) {
+                          alert("Este color ya ha sido agregado.");
+                          return;
+                        }
+                        setColors([...colors, hex]);
+                        setColorInput("");
+                      }}
+                      className="bg-navy text-white hover:bg-blue px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition"
+                      style={{ backgroundColor: "#0B2545" }}
+                    >
+                      Añadir
+                    </button>
+                  </div>
+                  {colors.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-100 rounded-2xl select-none">
+                      {colors.map((c, idx) => (
+                        <div 
+                          key={idx} 
+                          className="flex items-center space-x-1.5 bg-white border border-gray-200 py-1 px-2.5 rounded-full shadow-sm"
+                        >
+                          <span 
+                            className="w-3 h-3 rounded-full border border-gray-200" 
+                            style={{ backgroundColor: c }}
+                          />
+                          <span className="text-[10px] font-mono text-gray-500 uppercase">{c}</span>
+                          <button
+                            type="button"
+                            onClick={() => setColors(colors.filter((val) => val !== c))}
+                            className="text-red-500 hover:text-red-700 text-xs font-bold pl-1.5 focus:outline-none"
+                            title="Quitar color"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-gray-400 italic">No se han definido colores para este producto (se mostrará por defecto sin variantes de color).</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ImageUploadPicker
+                    label="Imagen 1 (Frente)"
+                    value={image1}
+                    onChange={(val) => setImage1(val)}
+                    tip="Resolución sugerida: 800x1000px (Relación 4:5 vertical ideal para catálogo ecommerce)"
+                  />
+                  <ImageUploadPicker
+                    label="Imagen 2 (Reverso)"
+                    value={image2}
+                    onChange={(val) => setImage2(val)}
+                    tip="Resolución sugerida: 800x1000px (Ficha técnica o vista posterior de la prenda)"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Detalle Corto (Subtítulo)</label>
-                <input
-                  type="text"
-                  required
-                  value={detail}
-                  onChange={(e) => setDetail(e.target.value)}
-                  className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
-                  placeholder="Ej. Costuras reforzadas e impermeabilidad certificada..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Descripción Detallada (Ficha Técnica)</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 p-3 rounded-xl text-sm outline-none focus:border-blue"
-                  rows={2}
-                  placeholder="Detalles adicionales, materiales, telas, usos comerciales, etc."
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ImageUploadPicker
-                  label="Imagen 1 (Frente)"
-                  value={image1}
-                  onChange={(val) => setImage1(val)}
-                  tip="Resolución sugerida: 800x1000px (Relación 4:5 vertical ideal para catálogo ecommerce)"
-                />
-                <ImageUploadPicker
-                  label="Imagen 2 (Reverso)"
-                  value={image2}
-                  onChange={(val) => setImage2(val)}
-                  tip="Resolución sugerida: 800x1000px (Ficha técnica o vista posterior de la prenda)"
-                />
-              </div>
-
-              <footer className="pt-4 flex justify-end space-x-3">
+              <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

@@ -9,6 +9,7 @@ interface OrderProductSnapshot {
   name: string;
   priceAtPurchase: number;
   quantity: number;
+  selectedColor?: string;
 }
 
 interface Order {
@@ -257,9 +258,9 @@ export default function AdminOrders() {
 
       {/* Modal Premium de Detalles del Pedido (Basado en el Snapshot de Productos) */}
       {isModalOpen && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50 p-4 font-sans select-none" style={{ zIndex: 999999 }}>
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 border border-gray-100 animate__animated animate__zoomIn animate__faster">
-            <header className="flex justify-between items-center mb-6 border-b border-gray-100 pb-3">
+        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-gray-500 bg-opacity-50 p-4 font-sans select-none overflow-y-auto py-8" style={{ zIndex: 999999 }}>
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-6 md:p-8 border border-gray-100 animate__animated animate__zoomIn animate__faster flex flex-col max-h-[85vh] md:max-h-[90vh]">
+            <header className="flex justify-between items-center mb-4 border-b border-gray-100 pb-3 flex-shrink-0">
               <h3 className="text-xl font-bold font-serif text-navy uppercase tracking-wider" style={{ color: "#0B2545" }}>
                 Detalles del Pedido B2B #{selectedOrder.orderNumber}
               </h3>
@@ -271,7 +272,7 @@ export default function AdminOrders() {
               </button>
             </header>
 
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-6 overflow-y-auto flex-1 pr-1 pb-4 min-h-0">
               
               {/* Bloque Ficha de Cliente y Despacho */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-lightnavy/30 p-5 rounded-2xl border border-gray-100" style={{ backgroundColor: "rgba(238, 244, 248, 0.3)" }}>
@@ -317,8 +318,21 @@ export default function AdminOrders() {
                       {Array.isArray(selectedOrder.products) ? (
                         (selectedOrder.products as OrderProductSnapshot[]).map((p, idx) => (
                           <tr key={idx} className="hover:bg-lightnavy/10 transition-colors">
-                            <td className="p-3 font-semibold text-navy" style={{ color: "#0B2545" }}>
-                              {p.name || `Prenda ID #${p.id}`}
+                            <td className="p-3">
+                              <div className="font-semibold text-navy text-xs" style={{ color: "#0B2545" }}>
+                                {p.name || `Prenda ID #${p.id}`}
+                              </div>
+                              {p.selectedColor && (
+                                <div className="flex items-center space-x-1.5 mt-1 select-none">
+                                  <span className="text-[10px] text-gray-400">Color:</span>
+                                  <span 
+                                    className="w-3 h-3 rounded-full border border-gray-300 shadow-sm"
+                                    style={{ backgroundColor: p.selectedColor }}
+                                    title={p.selectedColor}
+                                  />
+                                  <span className="text-[9px] font-mono text-gray-400">{p.selectedColor}</span>
+                                </div>
+                              )}
                             </td>
                             <td className="p-3 text-center font-bold">{p.quantity} un.</td>
                             <td className="p-3 text-right">$ {(p.priceAtPurchase || 0).toFixed(2)}</td>
@@ -351,7 +365,7 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            <footer className="pt-6 mt-6 border-t border-gray-100 flex justify-between select-none">
+            <footer className="pt-6 border-t border-gray-100 flex justify-between select-none flex-shrink-0">
               <button
                 onClick={() => handleDeleteOrder(selectedOrder.orderNumber)}
                 className="bg-white hover:bg-red-50 text-red border border-red/20 py-3 px-6 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors duration-200"

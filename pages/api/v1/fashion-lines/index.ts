@@ -5,10 +5,33 @@ import { validateAdminApiKey } from "@/lib/security";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
     try {
-      const fashionLines = await prisma.fashionLine.findMany({
-        where: { status: 1 },
+      const apiKey = req.headers["x-api-key"];
+      const masterKey = process.env.ADMIN_API_KEY || "destiny_admin_secret_key_2026";
+      const isAdmin = apiKey === masterKey;
+
+      let fashionLines = await prisma.fashionLine.findMany({
+        where: isAdmin ? undefined : { status: 1 },
         orderBy: { name: "asc" }
       });
+
+      // Si no hay ninguna línea de moda, autogeneramos las por defecto
+      if (fashionLines.length === 0) {
+        await prisma.fashionLine.createMany({
+          data: [
+            { id: 1, name: "Casual", tagline: "Día a Día", imageUrl: "/bg-img/casual_model.png", link: "/product-category/men", status: 1 },
+            { id: 2, name: "Noche", tagline: "Elegante", imageUrl: "/bg-img/elegant_model.png", link: "/product-category/men", status: 1 },
+            { id: 3, name: "Militar", tagline: "Táctico", imageUrl: "/bg-img/tactical_model.png", link: "/product-category/bags", status: 1 },
+            { id: 4, name: "Policial", tagline: "Seguridad", imageUrl: "/bg-img/police_model.png", link: "/product-category/bags", status: 1 },
+            { id: 5, name: "Femenina", tagline: "Moda Dama", imageUrl: "/bg-img/female_model.png", link: "/product-category/women", status: 1 },
+            { id: 6, name: "Masculina", tagline: "Moda Caballero", imageUrl: "/bg-img/male_model.png", link: "/product-category/men", status: 1 }
+          ]
+        });
+        fashionLines = await prisma.fashionLine.findMany({
+          where: isAdmin ? undefined : { status: 1 },
+          orderBy: { name: "asc" }
+        });
+      }
+
       res.status(200).json({ data: fashionLines });
     } catch (error) {
       console.error("Error fetching fashion lines:", error);

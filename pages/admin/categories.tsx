@@ -207,77 +207,78 @@ export default function AdminCategories() {
 
         {/* Modal de Creación */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm animate__animated animate__fadeIn animate__faster select-none">
-            <div className="bg-white w-full max-w-md p-8 rounded-3xl border border-gray-100 shadow-2xl mx-4 relative">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="absolute top-6 right-6 text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
-                  Agregar Nueva Categoría
-                </h3>
-                <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                  Gestión del Catálogo Destiny
-                </p>
-              </div>
-
-              {submitError && (
-                <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
-                  {submitError}
-                </div>
-              )}
-
-              <form onSubmit={handleAddSubmit} className="space-y-4 font-sans text-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden">
+              <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
                 <div>
-                  <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
-                    Nombre de la Categoría
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. Softshell, Vestidos, Táctico"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
-                  />
+                  <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
+                    Agregar Nueva Categoría
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+                    Gestión del Catálogo Destiny
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none text-2xl"
+                >
+                  &times;
+                </button>
+              </header>
+
+              <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
+                  {submitError && (
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                      {submitError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Nombre de la Categoría
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Softshell, Vestidos, Táctico"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Descripción (Opcional)
+                    </label>
+                    <textarea
+                      placeholder="Breve descripción descriptiva de los productos que agrupa..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={3}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm resize-none"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
-                    Descripción (Opcional)
-                  </label>
-                  <textarea
-                    placeholder="Breve descripción descriptiva de los productos que agrupa..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm resize-none"
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
+                <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3.5 px-4 rounded-xl uppercase tracking-wider transition-all duration-200"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-navy hover:bg-blue text-white font-bold py-3.5 px-4 rounded-xl uppercase tracking-wider transition-all duration-300 shadow-md active:scale-98"
+                    className="bg-navy text-white hover:bg-blue px-6 py-3 rounded-xl text-xs font-serif tracking-wider uppercase font-bold transition duration-300 disabled:opacity-50"
                     style={{ backgroundColor: "#0B2545" }}
                   >
                     {isSubmitting ? "Guardando..." : "Crear Categoría"}
                   </button>
-                </div>
+                </footer>
               </form>
             </div>
           </div>

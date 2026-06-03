@@ -16,9 +16,10 @@ type Props = {
   products: itemType[];
   banners: any[];
   fashionLines: any[];
+  promoCategories?: any[];
 };
 
-const Home: React.FC<Props> = ({ products, banners = [], fashionLines = [] }) => {
+const Home: React.FC<Props> = ({ products, banners = [], fashionLines = [], promoCategories = [] }) => {
   const t = useTranslations("Index");
   const [currentItems, setCurrentItems] = useState(products);
   const [isFetching, setIsFetching] = useState(false);
@@ -234,46 +235,25 @@ const Home: React.FC<Props> = ({ products, banners = [], fashionLines = [] }) =>
         {/* ===== 2. Original Category Section (New Arrivals, Women, Men with animations) ===== */}
         <section className="w-full h-auto py-12 bg-white border-b border-gray100 font-sans">
           <div className="app-max-width app-x-padding h-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 select-none">
-            <div className="w-full sm:col-span-2 lg:col-span-2">
-              <OverlayContainer
-                imgSrc="/bg-img/banner_minipage1.jpg"
-                imgSrc2="/bg-img/banner_minipage1-tablet.jpg"
-                imgAlt="Nuevos Ingresos"
-              >
-                <LinkButton
-                  href="/product-category/new-arrivals"
-                  extraClass="absolute bottom-10-per sm:right-10-per z-20 !text-navy font-bold uppercase tracking-wider text-xs"
-                >
-                  {t("new_arrivals")}
-                </LinkButton>
-              </OverlayContainer>
-            </div>
-            <div className="w-full">
-              <OverlayContainer
-                imgSrc="/bg-img/banner_minipage2.jpg"
-                imgAlt="Colección Dama"
-              >
-                <LinkButton
-                  href="/product-category/women"
-                  extraClass="absolute bottom-10-per z-20 !text-navy font-bold uppercase tracking-wider text-xs"
-                >
-                  {t("women_collection")}
-                </LinkButton>
-              </OverlayContainer>
-            </div>
-            <div className="w-full">
-              <OverlayContainer
-                imgSrc="/bg-img/banner_minipage3.jpg"
-                imgAlt="Colección Caballero"
-              >
-                <LinkButton
-                  href="/product-category/men"
-                  extraClass="absolute bottom-10-per z-20 !text-navy font-bold uppercase tracking-wider text-xs"
-                >
-                  {t("men_collection")}
-                </LinkButton>
-              </OverlayContainer>
-            </div>
+            {promoCategories.map((cat, index) => {
+              const isFirst = index === 0;
+              return (
+                <div key={cat.id || index} className={`w-full ${isFirst ? "sm:col-span-2 lg:col-span-2" : ""}`}>
+                  <OverlayContainer
+                    imgSrc={cat.imageUrl}
+                    imgSrc2={cat.imageUrlTablet || undefined}
+                    imgAlt={cat.title}
+                  >
+                    <LinkButton
+                      href={cat.link}
+                      extraClass={`absolute bottom-10-per ${isFirst ? "sm:right-10-per" : ""} z-20 !text-navy font-bold uppercase tracking-wider text-xs`}
+                    >
+                      {cat.title}
+                    </LinkButton>
+                  </OverlayContainer>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -430,6 +410,7 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
   let products: itemType[] = [];
   let banners: any[] = [];
   let fashionLines: any[] = [];
+  let promoCategories: any[] = [];
 
   try {
     const prisma = (await import("@/lib/prisma")).default;
@@ -500,6 +481,28 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
         link: f.link
       }));
     }
+
+    // 4. Obtener categorías promocionales activas (status: 1)
+    const dbPromoCategories = await prisma.promoCategory.findMany({
+      where: { status: 1 },
+      orderBy: { id: "asc" }
+    });
+
+    if (dbPromoCategories.length === 0) {
+      promoCategories = [
+        { id: 1, title: "Última Confección", imageUrl: "/bg-img/banner_minipage1.jpg", imageUrlTablet: "/bg-img/banner_minipage1-tablet.jpg", link: "/product-category/new-arrivals" },
+        { id: 2, title: "Línea Corporativa Femenina", imageUrl: "/bg-img/banner_minipage2.jpg", imageUrlTablet: null, link: "/product-category/women" },
+        { id: 3, title: "Línea Corporativa Masculina", imageUrl: "/bg-img/banner_minipage3.jpg", imageUrlTablet: null, link: "/product-category/men" }
+      ];
+    } else {
+      promoCategories = dbPromoCategories.map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        imageUrl: c.imageUrl,
+        imageUrlTablet: c.imageUrlTablet,
+        link: c.link
+      }));
+    }
   } catch (error) {
     console.error("Error fetching products in index.tsx", error);
     products = [];
@@ -513,6 +516,11 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
       { id: 2, name: "Noche", tagline: "Elegante", imageUrl: "/bg-img/elegant_model.png", link: "/product-category/men" },
       { id: 3, name: "Militar", tagline: "Táctico", imageUrl: "/bg-img/tactical_model.png", link: "/product-category/bags" }
     ];
+    promoCategories = [
+      { id: 1, title: "Última Confección", imageUrl: "/bg-img/banner_minipage1.jpg", imageUrlTablet: "/bg-img/banner_minipage1-tablet.jpg", link: "/product-category/new-arrivals" },
+      { id: 2, title: "Línea Corporativa Femenina", imageUrl: "/bg-img/banner_minipage2.jpg", imageUrlTablet: null, link: "/product-category/women" },
+      { id: 3, title: "Línea Corporativa Masculina", imageUrl: "/bg-img/banner_minipage3.jpg", imageUrlTablet: null, link: "/product-category/men" }
+    ];
   }
 
   return {
@@ -523,6 +531,7 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
       products,
       banners,
       fashionLines,
+      promoCategories,
     },
     revalidate: 60, // Incremental Static Regeneration (ISR) cada 60 segundos
   };

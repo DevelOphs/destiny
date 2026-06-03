@@ -98,10 +98,32 @@ export default function AdminFashionLines() {
     }
   };
 
+  const handleToggleStatus = async (id: number, currentStatus: number) => {
+    const apiKey = sessionStorage.getItem("admin_api_key");
+    if (!apiKey) return;
+
+    const newStatus = currentStatus === 1 ? 0 : 1;
+
+    try {
+      setErrorMsg("");
+      await axios.put(
+        `/api/v1/fashion-lines/${id}`,
+        { status: newStatus },
+        {
+          headers: { "x-api-key": apiKey }
+        }
+      );
+      fetchLines();
+    } catch (err: any) {
+      console.error("Error toggling fashion line status:", err);
+      alert("Error al cambiar el estado de visibilidad de la línea de moda.");
+    }
+  };
+
   const handleDeleteLine = async (id: number, lineName: string) => {
     if (
       !confirm(
-        `¿Está seguro de que desea eliminar la línea de moda "${lineName.toUpperCase()}"?\n\nSe desactivará del bloque central (6 categorías) de la página de inicio inmediatamente.`
+        `¿Está seguro de que desea eliminar PERMANENTEMENTE la línea de moda "${lineName.toUpperCase()}"?\n\nEsta acción borrará definitivamente el registro de la base de datos.`
       )
     )
       return;
@@ -117,7 +139,7 @@ export default function AdminFashionLines() {
       fetchLines();
     } catch (err: any) {
       console.error("Error deleting fashion line:", err);
-      alert("Error al intentar realizar el borrado lógico de la línea de moda.");
+      alert("Error al intentar eliminar la línea de moda de la base de datos.");
     }
   };
 
@@ -189,16 +211,40 @@ export default function AdminFashionLines() {
                     </div>
 
                     {/* Acciones de la línea */}
-                    <footer className="p-6 pt-0 select-none border-t border-gray-50 flex justify-between items-center">
-                      <span className="text-[9px] font-bold py-1 px-2.5 rounded-full border uppercase bg-green bg-opacity-10 text-green border-green border-opacity-25" style={{ color: "#10B981", borderColor: "rgba(16, 185, 129, 0.2)", backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
-                        Activo en Home
-                      </span>
+                    <footer className="p-6 pt-0 select-none border-t border-gray-55 flex justify-between items-center gap-4">
+                      <div className="flex items-center space-x-2">
+                        {/* Toggle Switch */}
+                        <div className="relative inline-block w-8 mr-1 align-middle select-none transition duration-200 ease-in">
+                          <input
+                            type="checkbox"
+                            name={`toggle-${line.id}`}
+                            id={`toggle-${line.id}`}
+                            checked={line.status === 1}
+                            onChange={() => handleToggleStatus(line.id, line.status)}
+                            className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border border-gray-300 appearance-none cursor-pointer focus:outline-none"
+                            style={{
+                              transform: line.status === 1 ? 'translateX(100%)' : 'translateX(0)',
+                              borderColor: line.status === 1 ? '#0B2545' : '#D1D5DB',
+                              transition: 'transform 0.25s ease, border-color 0.25s ease'
+                            }}
+                          />
+                          <label
+                            htmlFor={`toggle-${line.id}`}
+                            className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-250 ${line.status === 1 ? 'bg-navy' : 'bg-gray-300'}`}
+                            style={{ backgroundColor: line.status === 1 ? '#0B2545' : '#D1D5DB' }}
+                          ></label>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-500 font-sans uppercase">
+                          {line.status === 1 ? "Visible" : "Oculto"}
+                        </span>
+                      </div>
+
                       <button
                         onClick={() => handleDeleteLine(line.id, line.name)}
-                        className="text-xs font-bold text-red-500 hover:text-red-700 py-1.5 px-3 hover:bg-red-50 rounded-xl transition duration-200"
+                        className="text-xs font-bold text-red-500 hover:text-red-700 py-1.5 px-3 hover:bg-red-50 rounded-xl transition duration-200 whitespace-nowrap"
                         style={{ color: "#F05454" }}
                       >
-                        Eliminar Línea
+                        Eliminar
                       </button>
                     </footer>
                   </div>
@@ -210,98 +256,99 @@ export default function AdminFashionLines() {
 
         {/* Modal de Creación */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm animate__animated animate__fadeIn animate__faster select-none">
-            <div className="bg-white w-full max-w-md p-8 rounded-3xl border border-gray-100 shadow-2xl mx-4 relative overflow-y-auto max-h-[90vh]">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="absolute top-6 right-6 text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
-                  Agregar Línea de Moda
-                </h3>
-                <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                  Bloque Central Destiny Home
-                </p>
-              </div>
-
-              {submitError && (
-                <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
-                  {submitError}
-                </div>
-              )}
-
-              <form onSubmit={handleAddSubmit} className="space-y-4 font-sans text-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden">
+              <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
                 <div>
-                  <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
-                    Nombre (Obligatorio)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. Casual, Militar, Noche, Policial"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                  <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
+                    Agregar Línea de Moda
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+                    Bloque Central Destiny Home
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none text-2xl"
+                >
+                  &times;
+                </button>
+              </header>
+
+              <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
+                  {submitError && (
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                      {submitError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Nombre (Obligatorio)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Casual, Militar, Noche, Policial"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Subtítulo / Tagline (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Día a Día, Táctico, Elegante, Seguridad"
+                      value={tagline}
+                      onChange={(e) => setTagline(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <ImageUploadPicker
+                    label="Imagen de Fondo"
+                    value={imageUrl}
+                    onChange={(val) => setImageUrl(val)}
+                    tip="Resolución sugerida: 600x800px (Formato retrato / vertical elegante de moda)"
                   />
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Enlace de Categoría (Obligatorio)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. /product-category/men o /products"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
-                    Subtítulo / Tagline (Opcional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Día a Día, Táctico, Elegante, Seguridad"
-                    value={tagline}
-                    onChange={(e) => setTagline(e.target.value)}
-                    className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
-                  />
-                </div>
-
-                <ImageUploadPicker
-                  label="Imagen de Fondo"
-                  value={imageUrl}
-                  onChange={(val) => setImageUrl(val)}
-                  tip="Resolución sugerida: 600x800px (Formato retrato / vertical elegante de moda)"
-                />
-
-                <div>
-                  <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
-                    Enlace de Categoría (Obligatorio)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. /product-category/men o /products"
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                    className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
+                <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3.5 px-4 rounded-xl uppercase tracking-wider transition-all duration-200"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-navy hover:bg-blue text-white font-bold py-3.5 px-4 rounded-xl uppercase tracking-wider transition-all duration-300 shadow-md active:scale-98"
+                    className="bg-navy text-white hover:bg-blue px-6 py-3 rounded-xl text-xs font-serif tracking-wider uppercase font-bold transition duration-300 disabled:opacity-50"
                     style={{ backgroundColor: "#0B2545" }}
                   >
                     {isSubmitting ? "Guardando..." : "Crear Colección"}
                   </button>
-                </div>
+                </footer>
               </form>
             </div>
           </div>

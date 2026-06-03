@@ -7,12 +7,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const { order_by, offset, limit, category } = req.query;
 
-      // 1. Auto-siembra (Seeding) si la base de datos de PostgreSQL está vacía
-      const productCount = await prisma.product.count();
-      if (productCount === 0) {
-        try {
-          const { productsDb } = await import("../db");
-          for (const item of productsDb) {
+      // 1. Auto-siembra (Seeding) incremental si algún producto no existe
+      try {
+        const { productsDb } = await import("../db");
+        for (const item of productsDb) {
+          const existing = await prisma.product.findUnique({
+            where: { id: item.id }
+          });
+          
+          if (!existing) {
             const cat = await prisma.category.upsert({
               where: { name: item.category.name.toLowerCase() },
               update: {},
@@ -32,13 +35,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 image1: item.image1,
                 image2: item.image2,
                 categoryId: cat.id,
+                colors: item.colors,
                 createdAt: new Date(item.createdAt)
               }
             });
           }
-        } catch (seedError) {
-          console.error("Error seeding products database:", seedError);
         }
+      } catch (seedError) {
+        console.error("Error seeding products database:", seedError);
       }
 
       // 2. Construcción de filtros
@@ -86,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateAdminApiKey(req, res)) return;
 
     try {
-      const { name, price, detail, description, image1, image2, categoryName, categoryDescription } = req.body;
+      const { name, price, detail, description, image1, image2, categoryName, categoryDescription, colors } = req.body;
 
       if (!name || !price || !detail || !categoryName) {
         res.status(400).json({ success: false, error: "Missing required fields (name, price, detail, categoryName)" });
@@ -112,7 +116,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           description: description || detail,
           image1: image1 || "/bg-img/logo_scorpion.png",
           image2: image2 || image1 || "/bg-img/logo_scorpion.png",
-          categoryId: category.id
+          categoryId: category.id,
+          colors: colors || []
         },
         include: {
           category: true

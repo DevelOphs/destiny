@@ -22,6 +22,7 @@ const Card: FC<Props> = ({ item }) => {
   const [isWLHovered, setIsWLHovered] = useState(false);
 
   const { id, name, price, img1, img2 } = item;
+  const hasSecondaryImage = !!img2 && img2 !== img1;
 
   const itemLink = `/products/${encodeURIComponent(id)}`;
 
@@ -64,7 +65,13 @@ const Card: FC<Props> = ({ item }) => {
             {/* Contenedor relativo para el efecto de escala y crossfade */}
             <div className="relative overflow-hidden w-full h-full">
               {/* Imagen frontal (Base) */}
-              <div className={`transform transition-all duration-700 ease-in-out ${isHovered ? "scale-102 opacity-90" : "scale-100 opacity-100"}`}>
+              <div 
+                className={`transform transition-all duration-700 ease-in-out ${
+                  hasSecondaryImage
+                    ? isHovered ? "opacity-0 scale-102" : "opacity-100 scale-100"
+                    : isHovered ? "scale-105" : "scale-100"
+                }`}
+              >
                 <Image
                   src={img1 as string}
                   alt={name}
@@ -76,7 +83,7 @@ const Card: FC<Props> = ({ item }) => {
               </div>
 
               {/* Imagen trasera (Reverso) con disolvencia suave y zoom premium */}
-              {img2 && (
+              {hasSecondaryImage && (
                 <div
                   className={`absolute inset-0 w-full h-full transform transition-all duration-700 ease-in-out ${
                     isHovered

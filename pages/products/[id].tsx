@@ -35,6 +35,30 @@ type Props = {
   products: itemType[];
 };
 
+const getColorName = (hex?: string) => {
+  if (!hex) return "";
+  const upperHex = hex.toUpperCase();
+  const names: Record<string, string> = {
+    "#4B5320": "Verde Oliva",
+    "#000000": "Negro",
+    "#C3B091": "Caqui / Tan",
+    "#FFFFFF": "Blanco",
+    "#FF0000": "Rojo",
+    "#0000FF": "Azul",
+    "#808080": "Gris",
+    "#008000": "Verde",
+    "#FFFF00": "Amarillo",
+    "#FFA500": "Naranja",
+    "#800080": "Morado",
+    "#A52A2A": "Marrón",
+    "#F0E68C": "Caqui Claro",
+    "#2E8B57": "Verde Mar",
+    "#1E90FF": "Azul Esquisto",
+    "#36454F": "Gris Carbón",
+  };
+  return names[upperHex] || upperHex;
+};
+
 const Product: React.FC<Props> = ({ product, products }) => {
   const img1 = product.img1;
   const img2 = product.img2;
@@ -44,6 +68,9 @@ const Product: React.FC<Props> = ({ product, products }) => {
   const [size, setSize] = useState("M");
   const [mainImg, setMainImg] = useState(img1);
   const [currentQty, setCurrentQty] = useState(1);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(
+    product.colors && product.colors.length > 0 ? product.colors[0] : undefined
+  );
   const t = useTranslations("Category");
 
   const alreadyWishlisted =
@@ -51,6 +78,7 @@ const Product: React.FC<Props> = ({ product, products }) => {
 
   useEffect(() => {
     setMainImg(product.img1);
+    setSelectedColor(product.colors && product.colors.length > 0 ? product.colors[0] : undefined);
   }, [product]);
 
   const handleSize = (value: string) => {
@@ -60,6 +88,7 @@ const Product: React.FC<Props> = ({ product, products }) => {
   const currentItem = {
     ...product,
     qty: currentQty,
+    selectedColor,
   };
 
   const handleWishlist = () => {
@@ -169,6 +198,30 @@ const Product: React.FC<Props> = ({ product, products }) => {
             <span className="mb-2">
               {t("availability")}: {t("in_stock")}
             </span>
+            {product.colors && product.colors.length > 0 && (
+              <>
+                <span className="mb-2 block">
+                  Color: {getColorName(selectedColor)}
+                </span>
+                <div className="colorContainer flex space-x-3 text-sm mb-4">
+                  {product.colors.map((colorHex) => (
+                    <button
+                      key={colorHex}
+                      type="button"
+                      onClick={() => setSelectedColor(colorHex)}
+                      className={`w-8 h-8 rounded-full border cursor-pointer hover:scale-105 transition-transform flex items-center justify-center focus:outline-none`}
+                      style={{
+                        backgroundColor: colorHex,
+                        borderColor: selectedColor === colorHex ? "#111827" : "#d1d5db",
+                        borderWidth: selectedColor === colorHex ? "3px" : "1px",
+                      }}
+                      title={getColorName(colorHex)}
+                      aria-label={`Color ${getColorName(colorHex)}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             <span className="mb-2">
               {t("size")}: {size}
             </span>
@@ -345,6 +398,7 @@ export const getServerSideProps: GetServerSideProps = async ({
       img1: fetchedProduct.image1,
       img2: fetchedProduct.image2,
       categoryName: fetchedProduct.category.name,
+      colors: fetchedProduct.colors || [],
     };
 
     // Get suggested products of the same category
@@ -372,6 +426,7 @@ export const getServerSideProps: GetServerSideProps = async ({
         price: randomProduct.price,
         img1: randomProduct.image1,
         img2: randomProduct.image2,
+        colors: randomProduct.colors || [],
       });
     });
 

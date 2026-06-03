@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateAdminApiKey(req, res)) return;
 
     try {
-      const { name, price, detail, description, image1, image2, categoryName, categoryDescription } = req.body;
+      const { name, price, detail, description, image1, image2, categoryName, categoryDescription, colors } = req.body;
 
       const existingProduct = await prisma.product.findUnique({
         where: { id: productId }
@@ -51,6 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (description !== undefined) updateData.description = description;
       if (image1 !== undefined) updateData.image1 = image1;
       if (image2 !== undefined) updateData.image2 = image2;
+      if (colors !== undefined) updateData.colors = colors;
 
       if (categoryName) {
         const category = await prisma.category.upsert({

@@ -34,10 +34,11 @@ const cartReducer = (state: cartType, action: actionType) => {
         cart: removeItemFromCart(state.cart, action.payload as itemType),
       };
     case DELETE_ITEM:
+      const payloadItem = action.payload as itemType;
       return {
         ...state,
         cart: state.cart.filter(
-          (cartItem) => cartItem.id !== (action.payload as itemType).id
+          (cartItem) => !(cartItem.id === payloadItem.id && cartItem.selectedColor === payloadItem.selectedColor)
         ),
       };
     case SET_CART:

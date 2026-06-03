@@ -15,14 +15,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateAdminApiKey(req, res)) return;
 
     try {
-      const { name, tagline, imageUrl, link } = req.body;
+      const { name, tagline, imageUrl, link, status } = req.body;
 
-      const existing = await prisma.fashionLine.findFirst({
-        where: { id: fashionLineId, status: 1 }
+      const existing = await prisma.fashionLine.findUnique({
+        where: { id: fashionLineId }
       });
 
       if (!existing) {
-        res.status(404).json({ success: false, error: "Línea de moda no encontrada o inactiva." });
+        res.status(404).json({ success: false, error: "Línea de moda no encontrada." });
         return;
       }
 
@@ -43,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (tagline !== undefined) updateData.tagline = tagline || null;
       if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
       if (link !== undefined) updateData.link = link;
+      if (status !== undefined) updateData.status = parseInt(status.toString(), 10);
 
       const updated = await prisma.fashionLine.update({
         where: { id: fashionLineId },
@@ -58,22 +59,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!validateAdminApiKey(req, res)) return;
 
     try {
-      const existing = await prisma.fashionLine.findFirst({
-        where: { id: fashionLineId, status: 1 }
+      const existing = await prisma.fashionLine.findUnique({
+        where: { id: fashionLineId }
       });
 
       if (!existing) {
-        res.status(404).json({ success: false, error: "Línea de moda no encontrada o ya inactiva." });
+        res.status(404).json({ success: false, error: "Línea de moda no encontrada." });
         return;
       }
 
-      // Soft delete: cambiar status a 0
-      await prisma.fashionLine.update({
-        where: { id: fashionLineId },
-        data: { status: 0 }
+      // Hard delete: eliminar físicamente la línea de moda de la base de datos
+      await prisma.fashionLine.delete({
+        where: { id: fashionLineId }
       });
 
-      res.status(200).json({ success: true, message: "Línea de moda eliminada lógicamente con éxito." });
+      res.status(200).json({ success: true, message: "Línea de moda eliminada con éxito." });
     } catch (error) {
       console.error("Error deleting fashion line:", error);
       res.status(500).json({ success: false, error: "Internal Server Error" });
