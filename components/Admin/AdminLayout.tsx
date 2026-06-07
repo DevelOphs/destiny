@@ -113,6 +113,29 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
               </a>
             </Link>
 
+            <Link href="/admin/coupons" passHref>
+              <a className={`flex items-center space-x-3 p-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                currentPath === "/admin/coupons" ? "bg-blue text-white shadow-md" : "text-gray-300 hover:bg-white/5 hover:text-white"
+              }`} style={currentPath === "/admin/coupons" ? { backgroundColor: "#134074" } : {}}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 7.5h.008v.008H6V7.5z" />
+                </svg>
+                <span>Cupones</span>
+              </a>
+            </Link>
+
+            <Link href="/admin/employees" passHref>
+              <a className={`flex items-center space-x-3 p-3.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                currentPath === "/admin/employees" ? "bg-blue text-white shadow-md" : "text-gray-300 hover:bg-white/5 hover:text-white"
+              }`} style={currentPath === "/admin/employees" ? { backgroundColor: "#134074" } : {}}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.109A2.25 2.25 0 0112.75 21.5h-1.5a2.25 2.25 0 01-2.25-2.268v-.11c0-.367-.032-.731-.095-1.09M14.214 16.058A8.95 8.95 0 0012 15.75a8.95 8.95 0 00-2.214.308M12 3.75a3 3 0 100 6 3 3 0 000-6zM3 20.25a.75.75 0 01.75-.75h16.5a.75.75 0 01.75.75v.75H3v-.75z" />
+                </svg>
+                <span>Comisiones / Empleados</span>
+              </a>
+            </Link>
+
             {/* Separación y Título CMS */}
             <div className="pt-4 pb-2 text-[9px] font-bold text-gray-500 uppercase tracking-widest select-none">
               Gestión de Contenido CMS

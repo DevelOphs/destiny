@@ -39,6 +39,8 @@ interface Order {
   deliveryType: DeliveryType;
   totalPrice: number;
   deliveryDate: string;
+  couponCode?: string | null;
+  employeeCode?: string | null;
 }
 
 const getColorName = (hex?: string) => {
@@ -100,6 +102,84 @@ const ShoppingCart = () => {
   const [sendEmail, setSendEmail] = useState(false);    // Check de envío de factura fiscal
 
   // ==========================================
+  // ESTADOS DE CUPONES Y COMISIONES DE EMPLEADOS
+  // ==========================================
+  const [couponInput, setCouponInput] = useState("");
+  const [employeeInput, setEmployeeInput] = useState("");
+  const [couponCodeApplied, setCouponCodeApplied] = useState("");
+  const [employeeCodeApplied, setEmployeeCodeApplied] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+  const [employeeError, setEmployeeError] = useState("");
+  const [employeeSuccess, setEmployeeSuccess] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+
+  const handleApplyCoupon = async () => {
+    setCouponError("");
+    setCouponSuccess("");
+    if (!couponInput.trim()) {
+      setCouponError("Por favor ingrese un código de cupón.");
+      setCouponCodeApplied("");
+      setDiscountAmount(0);
+      return;
+    }
+
+    try {
+      const res = await axios.get(`/api/v1/coupons/validate?code=${encodeURIComponent(couponInput.trim())}`);
+      if (res.data.success && res.data.valid) {
+        const coupon = res.data.data;
+        setCouponCodeApplied(coupon.code);
+        let discount = 0;
+        if (coupon.discountType === "PERCENTAGE") {
+          discount = Number(subtotal) * (coupon.discountValue / 100);
+        } else {
+          discount = coupon.discountValue;
+        }
+        if (discount > Number(subtotal)) {
+          discount = Number(subtotal);
+        }
+        const roundedDiscount = Number(roundDecimal(discount));
+        setDiscountAmount(roundedDiscount);
+        setCouponSuccess(`¡Cupón aplicado con éxito! Descuento: -$${roundedDiscount.toFixed(2)} USD`);
+      } else {
+        setCouponCodeApplied("");
+        setDiscountAmount(0);
+        setCouponError(res.data.error || "Cupón inválido.");
+      }
+    } catch (err) {
+      console.error("Error applying coupon:", err);
+      setCouponError("Ocurrió un error al validar el cupón.");
+      setCouponCodeApplied("");
+      setDiscountAmount(0);
+    }
+  };
+
+  const handleApplyEmployee = async () => {
+    setEmployeeError("");
+    setEmployeeSuccess("");
+    if (!employeeInput.trim()) {
+      setEmployeeError("Por favor ingrese el código del vendedor.");
+      setEmployeeCodeApplied("");
+      return;
+    }
+
+    try {
+      const res = await axios.get(`/api/v1/employees/validate?code=${encodeURIComponent(employeeInput.trim())}`);
+      if (res.data.success && res.data.valid) {
+        setEmployeeCodeApplied(res.data.data.code);
+        setEmployeeSuccess(`Código válido. Asignado a: ${res.data.data.name}`);
+      } else {
+        setEmployeeCodeApplied("");
+        setEmployeeError(res.data.error || "Código de vendedor inválido.");
+      }
+    } catch (err) {
+      console.error("Error applying employee code:", err);
+      setEmployeeError("Ocurrió un error al validar el código.");
+      setEmployeeCodeApplied("");
+    }
+  };
+
+  // ==========================================
   // ESTADOS DE UI PREMIUM
   // ==========================================
   const [isCardModalOpen, setIsCardModalOpen] = useState(false); // Apertura de modal PayPhone
@@ -155,6 +235,16 @@ const ShoppingCart = () => {
       )
       .join("\n");
 
+    let pricingText = `*Subtotal:* $${subtotal} USD\n`;
+    if (discountAmount > 0) {
+      pricingText += `*Descuento (Cupón ${couponCodeApplied}):* -$${discountAmount.toFixed(2)} USD\n`;
+    }
+    pricingText += `*Cargos de Envío:* $${deliFee} USD (${deli === "STORE_PICKUP" ? "Retiro en Bodega" : deli === "QUITO" ? "Entrega en Quito" : "Envío a Provincias"})\n`;
+    pricingText += `*Monto Estimado Total:* $${roundDecimal(Math.max(0, +subtotal - discountAmount) + deliFee)} USD`;
+    if (employeeCodeApplied) {
+      pricingText += `\n*Vendedor Referido:* ${employeeCodeApplied}`;
+    }
+
     const message =
       `*SOLICITUD DE COTIZACIÓN - DESTINY / IJ DISTRIBUIDORA*\n\n` +
       `*Cliente / Razón Social:* ${name}\n` +
@@ -162,8 +252,7 @@ const ShoppingCart = () => {
       `*Teléfono de Contacto:* ${phone}\n` +
       `*Dirección de Entrega:* ${shippingAddress ? shippingAddress : address}\n\n` +
       `*Detalle del Pedido Mayorista:*\n${formattedProducts}\n\n` +
-      `*Cargos de Envío:* $${deliFee} USD (${deli === "STORE_PICKUP" ? "Retiro en Bodega" : deli === "QUITO" ? "Entrega en Quito" : "Envío a Provincias"})\n` +
-      `*Monto Estimado Total:* $${roundDecimal(+subtotal + deliFee)} USD\n\n` +
+      pricingText + `\n\n` +
       `*¡Hola! Requiero cotización formal y tiempos de entrega para este requerimiento.*`;
 
     const encodedMessage = encodeURIComponent(message);
@@ -179,8 +268,10 @@ const ShoppingCart = () => {
       orderDate: new Date().toISOString(),
       paymentType: "WHATSAPP_QUOTE",
       deliveryType: deli,
-      totalPrice: Number(roundDecimal(+subtotal + deliFee)),
+      totalPrice: Number(roundDecimal(Math.max(0, +subtotal - discountAmount) + deliFee)),
       deliveryDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
+      couponCode: couponCodeApplied || null,
+      employeeCode: employeeCodeApplied || null
     });
   };
 
@@ -218,28 +309,42 @@ const ShoppingCart = () => {
     if (!auth.user) registerUser();
 
     const makeOrder = async () => {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
-        {
-          customerId: auth!.user?.id || 1,
-          customerName: name,
-          customerEmail: email,
-          customerPhone: phone,
-          shippingAddress: shippingAddress ? shippingAddress : address,
-          totalPrice: roundDecimal(+subtotal + deliFee),
-          deliveryDate: new Date().setDate(new Date().getDate() + 7),
-          paymentType: paymentMethod,
-          deliveryType: deli,
-          products,
-          sendEmail,
+      const productsPayload = cart.map((item) => ({
+        id: item.id,
+        quantity: item.qty,
+        selectedColor: item.selectedColor || null,
+      }));
+
+      try {
+        const res = await axios.post(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/orders`,
+          {
+            customerId: auth!.user?.id || 1,
+            customerName: name,
+            customerEmail: email,
+            customerPhone: phone,
+            shippingAddress: shippingAddress ? shippingAddress : address,
+            deliveryDate: new Date().setDate(new Date().getDate() + 7),
+            paymentType: paymentMethod,
+            deliveryType: deli,
+            products: productsPayload,
+            sendEmail,
+            couponCode: couponCodeApplied || null,
+            employeeCode: employeeCodeApplied || null,
+          }
+        );
+        if (res.data.success) {
+          setCompletedOrder(res.data.data);
+          clearCart!();
+          setIsOrdering(false);
+        } else {
+          setOrderError("error_occurs");
+          setIsOrdering(false);
         }
-      );
-      if (res.data.success) {
-        setCompletedOrder(res.data.data);
-        clearCart!();
-        setIsOrdering(false);
-      } else {
-        setOrderError("error_occurs");
+      } catch (err: any) {
+        console.error("Order creation failed:", err);
+        const msg = err.response?.data?.error || "Ocurrió un error al procesar el pedido. Inténtelo de nuevo.";
+        setOrderError(msg);
         setIsOrdering(false);
       }
     };
@@ -370,6 +475,17 @@ const ShoppingCart = () => {
                 }}
                 orderError={orderError}
                 translationFunction={t}
+                couponCode={couponInput}
+                setCouponCode={setCouponInput}
+                employeeCode={employeeInput}
+                setEmployeeCode={setEmployeeInput}
+                onApplyCoupon={handleApplyCoupon}
+                onApplyEmployee={handleApplyEmployee}
+                couponError={couponError}
+                couponSuccess={couponSuccess}
+                employeeError={employeeError}
+                employeeSuccess={employeeSuccess}
+                discountAmount={discountAmount}
               />
             </div>
           </div>

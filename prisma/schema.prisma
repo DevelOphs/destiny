@@ -32,19 +32,22 @@ model Product {
 }
 
 model Order {
-  orderNumber     Int      @id // Código numérico único de 6 dígitos
-  customerId      Int      @default(1)
-  customerName    String?  @default("Cliente Destiny")
-  customerEmail   String?  @default("cliente@destiny.com")
-  customerPhone   String?  @default("+593")
-  shippingAddress String
-  orderDate       DateTime @default(now())
-  paymentType     String   // "CASH_ON_DELIVERY", "BANK_TRANSFER", etc.
-  deliveryType    String   // "STORE_PICKUP", "QUITO", "PROVINCIAS"
-  totalPrice      Float
-  deliveryDate    DateTime
-  products        Json     // Lista estructurada de productos comprados: [{id: 100, quantity: 2}]
-  sendEmail       Boolean  @default(false)
+  orderNumber        Int      @id // Código numérico único de 6 dígitos
+  customerId         Int      @default(1)
+  customerName       String?  @default("Cliente Destiny")
+  customerEmail      String?  @default("cliente@destiny.com")
+  customerPhone      String?  @default("+593")
+  shippingAddress    String
+  orderDate          DateTime @default(now())
+  paymentType        String   // "CASH_ON_DELIVERY", "BANK_TRANSFER", etc.
+  deliveryType       String   // "STORE_PICKUP", "QUITO", "PROVINCIAS"
+  totalPrice         Float
+  deliveryDate       DateTime
+  products           Json     // Lista estructurada de productos comprados: [{id: 100, quantity: 2}]
+  sendEmail          Boolean  @default(false)
+  couponCode         String?
+  employeeCode       String?
+  employeeCommission Float?
 }
 
 model Contact {
@@ -86,6 +89,28 @@ model PromoCategory {
   link           String   // Enlace de redirección
   status         Int      @default(1) // 1 = activo, 0 = inactivo
   createdAt      DateTime @default(now())
+}
+
+model Coupon {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique
+  discountType  String   // "PERCENTAGE" o "FIXED"
+  discountValue Float
+  usageLimit    Int?     // Límite de uso
+  usedCount     Int      @default(0) // Contador de usos
+  status        Int      @default(1) // 1 = activo, 0 = inactivo
+  createdAt     DateTime @default(now())
+}
+
+model Employee {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  code                 String   @unique
+  commissionPercentage Float    @default(5.0)
+  totalSalesCount      Int      @default(0)
+  totalCommissions     Float    @default(0.0)
+  status               Int      @default(1) // 1 = activo, 0 = inactivo
+  createdAt            DateTime @default(now())
 }
 
 

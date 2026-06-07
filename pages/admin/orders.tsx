@@ -26,6 +26,9 @@ interface Order {
   deliveryDate: string;
   products: any; // Campo JSON persistido
   sendEmail: boolean;
+  couponCode?: string | null;
+  employeeCode?: string | null;
+  employeeCommission?: number | null;
 }
 
 export default function AdminOrders() {
@@ -294,6 +297,27 @@ export default function AdminOrders() {
                       <span className="font-bold text-navy">Notificación:</span>{" "}
                       {selectedOrder.sendEmail ? "Solicitó comprobante digital por email" : "No solicitó comprobante digital"}
                     </div>
+                    {selectedOrder.couponCode && (
+                      <div>
+                        <span className="font-bold text-navy">Cupón Aplicado:</span>{" "}
+                        <span className="font-mono bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-md font-bold uppercase text-[10px] ml-1">
+                          {selectedOrder.couponCode}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.employeeCode && (
+                      <div className="flex items-center flex-wrap">
+                        <span className="font-bold text-navy mr-1">Vendedor Referido:</span>{" "}
+                        <span className="font-mono bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-md font-bold uppercase text-[10px]">
+                          {selectedOrder.employeeCode}
+                        </span>
+                        {selectedOrder.employeeCommission !== undefined && selectedOrder.employeeCommission !== null && (
+                          <span className="ml-2 font-semibold text-gray-500">
+                            (Comisión: ${selectedOrder.employeeCommission.toFixed(2)} USD)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

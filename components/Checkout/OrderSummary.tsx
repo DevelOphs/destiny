@@ -23,6 +23,17 @@ interface OrderSummaryProps {
   onOrderSubmit: () => void;                                 // Acción para disparar el flujo del checkout
   orderError: string;                                        // Mensaje de error general de orden
   translationFunction: (key: string) => string;              // Función del diccionario de internacionalización
+  couponCode: string;
+  setCouponCode: (value: string) => void;
+  employeeCode: string;
+  setEmployeeCode: (value: string) => void;
+  onApplyCoupon: () => void;
+  onApplyEmployee: () => void;
+  couponError: string;
+  couponSuccess: string;
+  employeeError: string;
+  employeeSuccess: string;
+  discountAmount: number;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
@@ -39,9 +50,20 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   onOrderSubmit,
   orderError,
   translationFunction: t,
+  couponCode,
+  setCouponCode,
+  employeeCode,
+  setEmployeeCode,
+  onApplyCoupon,
+  onApplyEmployee,
+  couponError,
+  couponSuccess,
+  employeeError,
+  employeeSuccess,
+  discountAmount,
 }) => {
   // SVGs Premium para Métodos de Pago y Despachos (Cero Emojis)
-  
+
   const WhatsAppIcon = ({ className = "w-5 h-5" }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.966C16.59 1.978 14.121 1.01 11.5 1.01 6.064 1.01 1.642 5.378 1.638 10.81c-.001 1.762.463 3.484 1.347 5.02L2.005 20.31l4.642-1.156zm12.021-7.24c-.33-.164-1.951-.955-2.254-1.064-.3-.109-.521-.164-.74.164-.221.328-.853 1.064-1.047 1.282-.194.218-.388.245-.718.082-1.28-.636-2.183-1.11-3.025-2.535-.221-.383.221-.356.632-1.168.077-.153.038-.287-.019-.405-.057-.118-.52-1.239-.713-1.693-.186-.45-.375-.389-.521-.389-.131-.008-.28-.008-.43-.008-.15 0-.393.055-.599.278-.206.223-.787.758-.787 1.848 0 1.09.8 2.14 1.09 2.53.29.39 1.55 2.33 3.73 3.27.52.22 1.02.37 1.37.48.52.16 1.01.14 1.39.08.43-.06 1.95-.79 2.22-1.52.28-.73.28-1.36.19-1.5-.09-.13-.33-.21-.66-.37z" />
@@ -104,6 +126,13 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           <span className="uppercase text-gray-400 font-sans">{t("subtotal")}</span>
           <span className="text-navy font-bold">$ {subtotal}</span>
         </div>
+
+        {discountAmount > 0 && (
+          <div className="py-3 flex justify-between text-sm font-semibold text-red-600">
+            <span className="uppercase text-red-500 font-sans">Descuento (Cupón):</span>
+            <span className="font-bold">-$ {discountAmount.toFixed(2)}</span>
+          </div>
+        )}
 
         {/* Métodos de Despacho (Ecuador) */}
         <div className="py-4">
@@ -170,27 +199,79 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         </div>
 
+        {/* Bloque de Cupones y Referidos */}
+        <div className="py-4 border-t border-gray-100 space-y-4">
+          {/* Input Cupón */}
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 font-sans">
+              Cupón de Descuento
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="flex-1 border border-gray-300 p-2.5 rounded-xl text-sm outline-none uppercase font-mono"
+              />
+              <button
+                type="button"
+                onClick={onApplyCoupon}
+                className="bg-navy text-white hover:bg-blue px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition"
+                style={{ backgroundColor: "#0B2545" }}
+              >
+                Aplicar
+              </button>
+            </div>
+            {couponError && <p className="text-red-500 text-xs mt-1.5 font-semibold">{couponError}</p>}
+            {couponSuccess && <p className="text-green text-xs mt-1.5 font-semibold" style={{ color: "#10B981" }}>{couponSuccess}</p>}
+          </div>
+
+          {/* Input Código de Empleado */}
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 font-sans">
+              Código de Empleado
+            </label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={employeeCode}
+                onChange={(e) => setEmployeeCode(e.target.value)}
+                className="flex-1 border border-gray-300 p-2.5 rounded-xl text-sm outline-none uppercase font-mono"
+              />
+              <button
+                type="button"
+                onClick={onApplyEmployee}
+                className="bg-navy text-white hover:bg-blue px-4 py-2.5 rounded-xl text-xs font-bold uppercase transition"
+                style={{ backgroundColor: "#0B2545" }}
+              >
+                Aplicar
+              </button>
+            </div>
+            {employeeError && <p className="text-red-500 text-xs mt-1.5 font-semibold">{employeeError}</p>}
+            {employeeSuccess && <p className="text-green text-xs mt-1.5 font-semibold" style={{ color: "#10B981" }}>{employeeSuccess}</p>}
+          </div>
+        </div>
+
         {/* Gran Total */}
         <div>
           <div className="flex justify-between py-4 font-bold text-base text-navy font-serif tracking-wider border-b border-gray-100 mb-6">
             <span>{t("grand_total")}</span>
-            <span>$ {roundDecimal(+subtotal + deliFee)} USD</span>
+            <span>$ {roundDecimal(Math.max(0, +subtotal - discountAmount) + deliFee)} USD</span>
           </div>
 
           {/* Grilla Selectora de Métodos de Pago */}
           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 font-sans">
             Método de Pago
           </h4>
-          
+
           <div className="grid gap-4 mt-2 mb-6">
             {/* Pago 1: WhatsApp Cotización */}
             <label
               htmlFor="plan-whatsapp"
-              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${
-                paymentMethod === "WHATSAPP_QUOTE"
-                  ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
-                  : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-              }`}
+              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${paymentMethod === "WHATSAPP_QUOTE"
+                ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-navy text-sm leading-tight flex items-center">
@@ -219,11 +300,10 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             {/* Pago 2: Pasarela Tarjeta PayPhone */}
             <label
               htmlFor="plan-payphone"
-              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${
-                paymentMethod === "PAYPHONE_CARD"
-                  ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
-                  : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-              }`}
+              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${paymentMethod === "PAYPHONE_CARD"
+                ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-navy text-sm leading-tight flex items-center">
@@ -252,11 +332,10 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             {/* Pago 3: Cuentas Bancarias */}
             <label
               htmlFor="plan-bank"
-              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${
-                paymentMethod === "BANK_TRANSFER"
-                  ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
-                  : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-              }`}
+              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${paymentMethod === "BANK_TRANSFER"
+                ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-navy text-sm leading-tight flex items-center">
@@ -285,11 +364,10 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             {/* Pago 4: Contra entrega */}
             <label
               htmlFor="plan-cash"
-              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${
-                paymentMethod === "CASH_ON_DELIVERY"
-                  ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
-                  : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-              }`}
+              className={`relative flex flex-col p-5 rounded-2xl border cursor-pointer transition-all duration-300 ${paymentMethod === "CASH_ON_DELIVERY"
+                ? "border-blue bg-lightnavy ring-2 ring-blue ring-opacity-10 shadow-md"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                }`}
             >
               <div className="flex justify-between items-center">
                 <span className="font-bold text-navy text-sm leading-tight flex items-center">
@@ -341,8 +419,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             paymentMethod === "WHATSAPP_QUOTE"
               ? "Enviar Cotización a WhatsApp"
               : paymentMethod === "PAYPHONE_CARD"
-              ? "Pagar de forma Segura con Tarjeta"
-              : "Confirmar Pedido"
+                ? "Pagar de forma Segura con Tarjeta"
+                : "Confirmar Pedido"
           }
           size="xl"
           extraClass="w-full !bg-navy hover:!bg-blue text-white border-navy font-serif tracking-wider uppercase py-4 select-none !rounded-2xl transition-all duration-300 font-bold active:scale-98"
