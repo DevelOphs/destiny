@@ -305,19 +305,26 @@ export default function AdminPromoCategories() {
                         <span className="text-[10px] font-mono text-gray-400">ID: {cat.id}</span>
                       </div>
 
-                      <div className="flex justify-between gap-4 border-t border-gray-50 pt-3">
+                      <div className="flex justify-end space-x-3 border-t border-gray-50 pt-3">
                         <button
                           onClick={() => handleEditClick(cat)}
-                          className="flex-1 text-center bg-gray-50 hover:bg-lightnavy border border-gray-200 text-navy font-bold py-2 rounded-xl text-xs transition duration-200"
+                          title="Editar Categoría Promocional"
+                          aria-label={`Editar categoría promocional ${cat.title}`}
+                          className="p-1.5 hover:bg-blue-50 rounded-lg transition duration-150 outline-none"
                         >
-                          Editar
+                          <svg className="w-5 h-5 text-blue hover:text-blue/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#134074" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
                         </button>
                         <button
                           onClick={() => handleDeleteCategory(cat.id, cat.title)}
-                          className="flex-1 text-center text-red-500 hover:text-red-700 hover:bg-red-50 py-2 border border-red-200 rounded-xl text-xs transition duration-200"
-                          style={{ color: "#F05454", borderColor: "rgba(240, 84, 84, 0.2)" }}
+                          title="Eliminar Categoría Promocional"
+                          aria-label={`Eliminar categoría promocional ${cat.title}`}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition duration-150 outline-none"
                         >
-                          Eliminar
+                          <svg className="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#F05454" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </footer>

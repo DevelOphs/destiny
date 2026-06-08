@@ -243,10 +243,14 @@ export default function AdminOrders() {
                         <td className="p-4 text-center select-none">
                           <button
                             onClick={() => handleOpenDetails(o)}
-                            className="text-xs font-bold text-blue hover:text-navy border border-blue/20 bg-blue/5 py-1.5 px-3 rounded-lg"
-                            style={{ color: "#134074", borderColor: "rgba(19, 64, 116, 0.2)" }}
+                            title="Ver Detalles del Pedido"
+                            aria-label={`Ver detalles del pedido ${o.orderNumber}`}
+                            className="p-1.5 hover:bg-blue-50 rounded-lg transition duration-150 outline-none"
                           >
-                            Ver Detalles
+                            <svg className="w-5 h-5 text-blue hover:text-blue/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#134074" }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                           </button>
                         </td>
                       </tr>

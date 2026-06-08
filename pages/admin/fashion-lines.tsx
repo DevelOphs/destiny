@@ -28,6 +28,16 @@ export default function AdminFashionLines() {
   const [submitError, setSubmitError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Estados del Formulario (Edición)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editTagline, setEditTagline] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editLink, setEditLink] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
   const fetchLines = async () => {
     try {
       setIsLoading(true);
@@ -95,6 +105,58 @@ export default function AdminFashionLines() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (line: FashionLine) => {
+    setEditId(line.id);
+    setEditName(line.name);
+    setEditTagline(line.tagline || "");
+    setEditImageUrl(line.imageUrl);
+    setEditLink(line.link);
+    setUpdateError("");
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdateError("");
+    setIsUpdating(true);
+
+    if (!editName.trim() || !editImageUrl.trim() || !editLink.trim()) {
+      setUpdateError("Los campos Nombre, Imagen y Enlace son obligatorios.");
+      setIsUpdating(false);
+      return;
+    }
+
+    try {
+      const apiKey = sessionStorage.getItem("admin_api_key");
+      if (!apiKey || !editId) return;
+
+      await axios.put(
+        `/api/v1/fashion-lines/${editId}`,
+        {
+          name: editName.trim(),
+          tagline: editTagline.trim() || null,
+          imageUrl: editImageUrl.trim(),
+          link: editLink.trim()
+        },
+        {
+          headers: { "x-api-key": apiKey }
+        }
+      );
+
+      setShowEditModal(false);
+      fetchLines();
+    } catch (err: any) {
+      console.error("Error updating fashion line:", err);
+      if (err.response && err.response.data && err.response.data.error) {
+        setUpdateError(err.response.data.error);
+      } else {
+        setUpdateError("Ocurrió un error al intentar actualizar la línea de moda.");
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -209,9 +271,8 @@ export default function AdminFashionLines() {
                         <span className="truncate">Enlace: {line.link}</span>
                       </div>
                     </div>
-
-                    {/* Acciones de la línea */}
-                    <footer className="p-6 pt-0 select-none border-t border-gray-55 flex justify-between items-center gap-4">
+                      {/* Acciones de la línea */}
+                    <footer className="p-6 pt-0 select-none border-t border-gray-100 flex justify-between items-center gap-4">
                       <div className="flex items-center space-x-2">
                         {/* Toggle Switch */}
                         <div className="relative inline-block w-8 mr-1 align-middle select-none transition duration-200 ease-in">
@@ -239,13 +300,28 @@ export default function AdminFashionLines() {
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteLine(line.id, line.name)}
-                        className="text-xs font-bold text-red-500 hover:text-red-700 py-1.5 px-3 hover:bg-red-50 rounded-xl transition duration-200 whitespace-nowrap"
-                        style={{ color: "#F05454" }}
-                      >
-                        Eliminar
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditClick(line)}
+                          title="Editar Línea de Moda"
+                          aria-label={`Editar línea de moda ${line.name}`}
+                          className="p-1.5 hover:bg-blue-50 rounded-lg transition duration-150 outline-none"
+                        >
+                          <svg className="w-5 h-5 text-blue hover:text-blue/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#134074" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteLine(line.id, line.name)}
+                          title="Eliminar Línea de Moda"
+                          aria-label={`Eliminar línea de moda ${line.name}`}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition duration-150 outline-none"
+                        >
+                          <svg className="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#F05454" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </footer>
                   </div>
                 ))}
@@ -347,6 +423,106 @@ export default function AdminFashionLines() {
                     style={{ backgroundColor: "#0B2545" }}
                   >
                     {isSubmitting ? "Guardando..." : "Crear Colección"}
+                  </button>
+                </footer>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edición */}
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden animate__animated animate__zoomIn animate__faster">
+              <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
+                    Editar Línea de Moda
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">
+                    Modificar Colección Destiny Home
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none text-2xl"
+                >
+                  &times;
+                </button>
+              </header>
+
+              <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
+                  {updateError && (
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                      {updateError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Nombre (Obligatorio)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Casual, Militar, Noche, Policial"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Subtítulo / Tagline (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Día a Día, Táctico, Elegante, Seguridad"
+                      value={editTagline}
+                      onChange={(e) => setEditTagline(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <ImageUploadPicker
+                    label="Imagen de Fondo"
+                    value={editImageUrl}
+                    onChange={(val) => setEditImageUrl(val)}
+                    tip="Resolución sugerida: 600x800px (Formato retrato / vertical elegante de moda)"
+                  />
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Enlace de Categoría (Obligatorio)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. /product-category/men o /products"
+                      value={editLink}
+                      onChange={(e) => setEditLink(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+                </div>
+
+                <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="bg-navy text-white hover:bg-blue px-6 py-3 rounded-xl text-xs font-serif tracking-wider uppercase font-bold transition duration-300 disabled:opacity-50"
+                    style={{ backgroundColor: "#0B2545" }}
+                  >
+                    {isUpdating ? "Guardando..." : "Guardar Cambios"}
                   </button>
                 </footer>
               </form>

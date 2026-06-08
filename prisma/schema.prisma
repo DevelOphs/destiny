@@ -14,6 +14,8 @@ model Category {
   description String?
   status      Int       @default(1) // 1 = activo, 0 = eliminado lógicamente
   products    Product[]
+
+  @@index([status])
 }
 
 model Product {
@@ -29,6 +31,8 @@ model Product {
   status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
   createdAt   DateTime @default(now())
   colors      String[] @default([])
+
+  @@index([status, categoryId])
 }
 
 model Order {
@@ -69,6 +73,8 @@ model Banner {
   order     Int      @default(0) // Orden visual en el carrusel
   status    Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
   createdAt DateTime @default(now())
+
+  @@index([status])
 }
 
 model FashionLine {
@@ -79,6 +85,8 @@ model FashionLine {
   link        String   // Redirección de categoría (ej: /product-category/men)
   status      Int      @default(1) // 1 = activo, 0 = eliminado lógicamente
   createdAt   DateTime @default(now())
+
+  @@index([status])
 }
 
 model PromoCategory {
@@ -89,6 +97,8 @@ model PromoCategory {
   link           String   // Enlace de redirección
   status         Int      @default(1) // 1 = activo, 0 = inactivo
   createdAt      DateTime @default(now())
+
+  @@index([status])
 }
 
 model Coupon {
@@ -100,6 +110,8 @@ model Coupon {
   usedCount     Int      @default(0) // Contador de usos
   status        Int      @default(1) // 1 = activo, 0 = inactivo
   createdAt     DateTime @default(now())
+
+  @@index([status])
 }
 
 model Employee {
@@ -114,6 +126,8 @@ model Employee {
   totalCommissions     Float    @default(0.0)
   status               Int      @default(1)
   createdAt            DateTime @default(now())
+
+  @@index([status])
 }
 
 

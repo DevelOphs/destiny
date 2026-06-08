@@ -30,6 +30,17 @@ export default function AdminBanners() {
   const [submitError, setSubmitError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Estados del Formulario (Edición)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editSubtitle, setEditSubtitle] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editLink, setEditLink] = useState("");
+  const [editOrder, setEditOrder] = useState("0");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
   const fetchBanners = async () => {
     try {
       setIsLoading(true);
@@ -99,6 +110,60 @@ export default function AdminBanners() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (banner: Banner) => {
+    setEditId(banner.id);
+    setEditTitle(banner.title || "");
+    setEditSubtitle(banner.subtitle || "");
+    setEditImageUrl(banner.imageUrl);
+    setEditLink(banner.link || "");
+    setEditOrder(banner.order.toString());
+    setUpdateError("");
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdateError("");
+    setIsUpdating(true);
+
+    if (!editImageUrl.trim()) {
+      setUpdateError("La URL de la imagen es obligatoria.");
+      setIsUpdating(false);
+      return;
+    }
+
+    try {
+      const apiKey = sessionStorage.getItem("admin_api_key");
+      if (!apiKey || !editId) return;
+
+      await axios.put(
+        `/api/v1/banners/${editId}`,
+        {
+          title: editTitle.trim() || null,
+          subtitle: editSubtitle.trim() || null,
+          imageUrl: editImageUrl.trim(),
+          link: editLink.trim() || null,
+          order: parseInt(editOrder, 10) || 0
+        },
+        {
+          headers: { "x-api-key": apiKey }
+        }
+      );
+
+      setShowEditModal(false);
+      fetchBanners();
+    } catch (err: any) {
+      console.error("Error updating banner:", err);
+      if (err.response && err.response.data && err.response.data.error) {
+        setUpdateError(err.response.data.error);
+      } else {
+        setUpdateError("Ocurrió un error al intentar actualizar el banner.");
+      }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -216,8 +281,7 @@ export default function AdminBanners() {
                         <span className="truncate">Enlace: {banner.link || "Sin redirección"}</span>
                       </div>
                     </div>
-
-                    {/* Acciones del banner */}
+                               {/* Acciones del banner */}
                     <footer className="p-6 pt-0 select-none border-t border-gray-50 flex justify-between items-center gap-4">
                       <div className="flex items-center space-x-2">
                         {/* Toggle Switch */}
@@ -246,13 +310,28 @@ export default function AdminBanners() {
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteBanner(banner.id, banner.title)}
-                        className="text-[11px] font-bold text-red-500 hover:text-red-700 py-1 px-2 hover:bg-red-50 rounded-xl transition duration-200 whitespace-nowrap"
-                        style={{ color: "#F05454" }}
-                      >
-                        Eliminar
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditClick(banner)}
+                          title="Editar Banner"
+                          aria-label={`Editar banner ${banner.title || ""}`}
+                          className="p-1.5 hover:bg-blue-50 rounded-lg transition duration-150 outline-none"
+                        >
+                          <svg className="w-5 h-5 text-blue hover:text-blue/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#134074" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBanner(banner.id, banner.title)}
+                          title="Eliminar Banner"
+                          aria-label={`Eliminar banner ${banner.title || ""}`}
+                          className="p-1.5 hover:bg-red-50 rounded-lg transition duration-150 outline-none"
+                        >
+                          <svg className="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#F05454" }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </footer>
                   </div>
                 ))}
@@ -368,6 +447,120 @@ export default function AdminBanners() {
                     style={{ backgroundColor: "#0B2545" }}
                   >
                     {isSubmitting ? "Guardando..." : "Crear Banner"}
+                  </button>
+                </footer>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edición */}
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden animate__animated animate__zoomIn animate__faster">
+              <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
+                    Editar Banner
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">
+                    Modificar Banner del Carrusel Destiny
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none text-2xl"
+                >
+                  &times;
+                </button>
+              </header>
+
+              <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
+                  {updateError && (
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                      {updateError}
+                    </div>
+                  )}
+
+                  <ImageUploadPicker
+                    label="Imagen del Banner"
+                    value={editImageUrl}
+                    onChange={(val) => setEditImageUrl(val)}
+                    tip="Resolución sugerida: 1920x800px (Formato apaisado / carrusel panorámico de alta definición)"
+                  />
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Título del Banner (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Colección Militar Táctico"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Subtítulo o Tagline (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Rendimiento y Resistencia"
+                      value={editSubtitle}
+                      onChange={(e) => setEditSubtitle(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Enlace de Redirección (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. /product-category/bags"
+                      value={editLink}
+                      onChange={(e) => setEditLink(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Prioridad de Orden
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editOrder}
+                      onChange={(e) => setEditOrder(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      Los números más bajos se mostrarán primero.
+                    </span>
+                  </div>
+                </div>
+
+                <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="bg-navy text-white hover:bg-blue px-6 py-3 rounded-xl text-xs font-serif tracking-wider uppercase font-bold transition duration-300 disabled:opacity-50"
+                    style={{ backgroundColor: "#0B2545" }}
+                  >
+                    {isUpdating ? "Guardando..." : "Guardar Cambios"}
                   </button>
                 </footer>
               </form>

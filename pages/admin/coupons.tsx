@@ -29,15 +29,25 @@ export default function AdminCoupons() {
   const [submitError, setSubmitError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Estados del Formulario (Edición)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editDiscountType, setEditDiscountType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
+  const [editDiscountValue, setEditDiscountValue] = useState("");
+  const [editUsageLimit, setEditUsageLimit] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
   const fetchCoupons = async () => {
     try {
       setIsLoading(true);
       setErrorMsg("");
-      const apiKey = sessionStorage.getItem("admin_api_key");
-      if (!apiKey) return;
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
 
       const res = await axios.get("/api/v1/coupons", {
-        headers: { "x-api-key": apiKey }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setCoupons(res.data.data || []);
     } catch (err: any) {
@@ -64,19 +74,19 @@ export default function AdminCoupons() {
     }
 
     try {
-      const apiKey = sessionStorage.getItem("admin_api_key");
-      if (!apiKey) return;
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
 
       await axios.post(
         "/api/v1/coupons",
         {
-          code: code.trim(),
+          code: code.trim().toUpperCase(),
           discountType,
           discountValue: parseFloat(discountValue),
           usageLimit: usageLimit.trim() ? parseInt(usageLimit, 10) : null
         },
         {
-          headers: { "x-api-key": apiKey }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
@@ -99,9 +109,61 @@ export default function AdminCoupons() {
     }
   };
 
+  const handleEditClick = (coupon: Coupon) => {
+    setEditId(coupon.id);
+    setEditCode(coupon.code);
+    setEditDiscountType(coupon.discountType);
+    setEditDiscountValue(coupon.discountValue.toString());
+    setEditUsageLimit(coupon.usageLimit !== null ? coupon.usageLimit.toString() : "");
+    setUpdateError("");
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdateError("");
+    setIsUpdating(true);
+
+    if (!editCode.trim() || !editDiscountValue.trim()) {
+      setUpdateError("Los campos Código y Valor de Descuento son obligatorios.");
+      setIsUpdating(false);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("admin_token");
+      if (!token || !editId) return;
+
+      await axios.put(
+        `/api/v1/coupons/${editId}`,
+        {
+          code: editCode.trim().toUpperCase(),
+          discountType: editDiscountType,
+          discountValue: parseFloat(editDiscountValue),
+          usageLimit: editUsageLimit.trim() ? parseInt(editUsageLimit, 10) : null
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      setShowEditModal(false);
+      fetchCoupons();
+    } catch (err: any) {
+      console.error("Error updating coupon:", err);
+      if (err.response && err.response.data && err.response.data.error) {
+        setUpdateError(err.response.data.error);
+      } else {
+        setUpdateError("Ocurrió un error al intentar actualizar el cupón.");
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleToggleStatus = async (id: number, currentStatus: number) => {
-    const apiKey = sessionStorage.getItem("admin_api_key");
-    if (!apiKey) return;
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
     const newStatus = currentStatus === 1 ? 0 : 1;
 
@@ -111,7 +173,7 @@ export default function AdminCoupons() {
         `/api/v1/coupons/${id}`,
         { status: newStatus },
         {
-          headers: { "x-api-key": apiKey }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
       fetchCoupons();
@@ -129,13 +191,13 @@ export default function AdminCoupons() {
     )
       return;
 
-    const apiKey = sessionStorage.getItem("admin_api_key");
-    if (!apiKey) return;
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
     try {
       setErrorMsg("");
       await axios.delete(`/api/v1/coupons/${id}`, {
-        headers: { "x-api-key": apiKey }
+        headers: { Authorization: `Bearer ${token}` }
       });
       fetchCoupons();
     } catch (err: any) {
@@ -187,7 +249,7 @@ export default function AdminCoupons() {
             {errorMsg}
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden animate__animated animate__fadeIn animate__faster">
             {filteredCoupons.length === 0 ? (
               <div className="text-center py-16 text-gray-400 font-sans text-sm select-none">
                 No se encontraron cupones de descuento configurados.
@@ -252,14 +314,27 @@ export default function AdminCoupons() {
                             </span>
                           </div>
                         </td>
-                        <td className="p-5 text-right select-none">
-                          <button
-                            onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
-                            className="text-xs font-bold text-red-500 hover:text-red-700 py-1.5 px-3 hover:bg-red-50 rounded-xl transition duration-200"
-                            style={{ color: "#F05454" }}
-                          >
-                            Eliminar
-                          </button>
+                        <td className="p-5 select-none text-right">
+                          <div className="flex items-center justify-end space-x-3">
+                            <button
+                              onClick={() => handleEditClick(coupon)}
+                              title="Editar Cupón"
+                              className="p-1.5 hover:bg-blue-50 rounded-lg transition duration-150 outline-none"
+                            >
+                              <svg className="w-5 h-5 text-blue hover:text-blue/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#134074" }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
+                              title="Eliminar Cupón"
+                              className="p-1.5 hover:bg-red-50 rounded-lg transition duration-150 outline-none"
+                            >
+                              <svg className="w-5 h-5 text-red-500 hover:text-red-700" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" style={{ color: "#F05454" }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -273,13 +348,13 @@ export default function AdminCoupons() {
         {/* Modal de Creación */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden animate__animated animate__zoomIn animate__faster">
               <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
                 <div>
                   <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
                     Crear Nuevo Cupón
                   </h3>
-                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">
                     Campañas de Descuento
                   </p>
                 </div>
@@ -357,7 +432,7 @@ export default function AdminCoupons() {
                       onChange={(e) => setUsageLimit(e.target.value)}
                       className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
                     />
-                    <span className="text-[10px] text-gray-400 mt-1 block">
+                    <span className="text-[10px] text-gray-400 mt-1 block font-semibold">
                       Evita abusos limitando el total de veces que este cupón puede ser canjeado por clientes.
                     </span>
                   </div>
@@ -378,6 +453,121 @@ export default function AdminCoupons() {
                     style={{ backgroundColor: "#0B2545" }}
                   >
                     {isSubmitting ? "Creando..." : "Crear Cupón"}
+                  </button>
+                </footer>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edición */}
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden animate__animated animate__zoomIn animate__faster">
+              <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
+                    Editar Cupón
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">
+                    Modificar Campaña de Descuento
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-navy transition-colors duration-200 focus:outline-none text-2xl"
+                >
+                  &times;
+                </button>
+              </header>
+
+              <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
+                  {updateError && (
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                      {updateError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Código del Cupón (Obligatorio)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. DESCUENTO10"
+                      value={editCode}
+                      onChange={(e) => setEditCode(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm uppercase"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                        Tipo de Descuento
+                      </label>
+                      <select
+                        value={editDiscountType}
+                        onChange={(e) => setEditDiscountType(e.target.value as "PERCENTAGE" | "FIXED")}
+                        className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm bg-white"
+                      >
+                        <option value="PERCENTAGE">Porcentaje (%)</option>
+                        <option value="FIXED">Valor Fijo ($ USD)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                        Valor del Descuento
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Ej. 10 para 10% o 10.00"
+                        value={editDiscountValue}
+                        onChange={(e) => setEditDiscountValue(e.target.value)}
+                        className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                      Límite de Usos (Opcional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Dejar en blanco para usos ilimitados"
+                      value={editUsageLimit}
+                      onChange={(e) => setEditUsageLimit(e.target.value)}
+                      className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block font-semibold">
+                      Evita abusos limitando el total de veces que este cupón puede ser canjeado por clientes.
+                    </span>
+                  </div>
+                </div>
+
+                <footer className="p-6 border-t border-gray-100 flex-shrink-0 flex justify-end space-x-3 bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 px-6 rounded-xl text-xs uppercase tracking-wider transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="bg-navy text-white hover:bg-blue px-6 py-3 rounded-xl text-xs font-serif tracking-wider uppercase font-bold transition duration-300 disabled:opacity-50"
+                    style={{ backgroundColor: "#0B2545" }}
+                  >
+                    {isUpdating ? "Guardando..." : "Guardar Cambios"}
                   </button>
                 </footer>
               </form>
