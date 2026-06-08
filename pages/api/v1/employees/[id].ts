@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
 import { validateAdminApiKey } from "@/lib/security";
+import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!validateAdminApiKey(req, res)) return;
+  if (!await validateAdminApiKey(req, res)) return;
 
   const { id } = req.query;
   const employeeId = parseInt(id as string, 10);
@@ -15,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === "PUT") {
     try {
-      const { name, code, commissionPercentage, status } = req.body;
+      const { name, code, commissionPercentage, status, email, role, password } = req.body;
 
       const currentEmployee = await prisma.employee.findUnique({
         where: { id: employeeId }
@@ -52,6 +53,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (status !== undefined) {
         updateData.status = parseInt(status.toString(), 10);
+      }
+
+      if (email) {
+        const formattedEmail = email.trim().toLowerCase();
+        if (formattedEmail !== currentEmployee.email) {
+          if (!formattedEmail.includes("@")) {
+            res.status(400).json({ success: false, error: "El formato de correo es inválido." });
+            return;
+          }
+          const existingEmail = await prisma.employee.findUnique({
+            where: { email: formattedEmail }
+          });
+          if (existingEmail) {
+            res.status(400).json({ success: false, error: "Ese correo electrónico ya está en uso." });
+            return;
+          }
+        }
+        updateData.email = formattedEmail;
+      }
+
+      if (role) {
+        if (role !== "ADMIN" && role !== "VENDEDOR") {
+          res.status(400).json({ success: false, error: "Rol inválido. Debe ser ADMIN o VENDEDOR." });
+          return;
+        }
+        updateData.role = role;
+      }
+
+      if (password && password.trim() !== "") {
+        updateData.passwordHash = await bcrypt.hash(password, 10);
       }
 
       const updatedEmployee = await prisma.employee.update({

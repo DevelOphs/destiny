@@ -3,17 +3,11 @@ import prisma from "@/lib/prisma";
 import { validateAdminApiKey } from "@/lib/security";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!await validateAdminApiKey(req, res)) return;
+
   if (req.method === "GET") {
-    // Para ver todos los cupones en el admin, requiere API Key
-    const apiKey = req.headers["x-api-key"];
-    const masterKey = process.env.ADMIN_API_KEY || "destiny_admin_secret_key_2026";
-    const isAdmin = apiKey === masterKey;
-
-    const whereClause = isAdmin ? {} : { status: 1 };
-
     try {
       const coupons = await prisma.coupon.findMany({
-        where: whereClause,
         orderBy: { createdAt: "desc" }
       });
       res.status(200).json({ success: true, data: coupons });
@@ -22,7 +16,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ success: false, error: "Internal Server Error" });
     }
   } else if (req.method === "POST") {
-    if (!validateAdminApiKey(req, res)) return;
 
     try {
       const { code, discountType, discountValue, usageLimit } = req.body;

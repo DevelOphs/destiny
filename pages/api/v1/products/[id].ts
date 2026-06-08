@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } else if (req.method === "PUT") {
     // Proteger la mutación de datos con API Key en los headers
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const { name, price, detail, description, image1, image2, categoryName, categoryDescription, colors } = req.body;
@@ -78,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } else if (req.method === "DELETE") {
     // Proteger la mutación de datos con API Key en los headers
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const existingProduct = await prisma.product.findFirst({

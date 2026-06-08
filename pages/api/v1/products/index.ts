@@ -87,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } else if (req.method === "POST") {
     // Proteger estrictamente la mutación de datos con la API Key en los headers
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const { name, price, detail, description, image1, image2, categoryName, categoryDescription, colors } = req.body;

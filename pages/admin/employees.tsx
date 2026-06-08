@@ -6,8 +6,10 @@ import SkeletonLoader from "@/components/UI/SkeletonLoader";
 interface Employee {
   id: number;
   name: string;
+  email: string;
   code: string;
   commissionPercentage: number;
+  role: string;
   totalSalesCount: number;
   totalCommissions: number;
   status: number;
@@ -22,6 +24,9 @@ export default function AdminEmployees() {
 
   // Estados del Formulario (Creación)
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("VENDEDOR");
   const [code, setCode] = useState("");
   const [commissionPercentage, setCommissionPercentage] = useState("5.0");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,11 +37,11 @@ export default function AdminEmployees() {
     try {
       setIsLoading(true);
       setErrorMsg("");
-      const apiKey = sessionStorage.getItem("admin_api_key");
-      if (!apiKey) return;
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
 
       const res = await axios.get("/api/v1/employees", {
-        headers: { "x-api-key": apiKey }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setEmployees(res.data.data || []);
     } catch (err: any) {
@@ -56,30 +61,36 @@ export default function AdminEmployees() {
     setSubmitError("");
     setIsSubmitting(true);
 
-    if (!name.trim() || !code.trim() || !commissionPercentage.trim()) {
+    if (!name.trim() || !email.trim() || !password.trim() || !code.trim() || !commissionPercentage.trim()) {
       setSubmitError("Todos los campos son obligatorios.");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const apiKey = sessionStorage.getItem("admin_api_key");
-      if (!apiKey) return;
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
 
       await axios.post(
         "/api/v1/employees",
         {
           name: name.trim(),
+          email: email.trim(),
+          password: password,
+          role: role,
           code: code.trim(),
           commissionPercentage: parseFloat(commissionPercentage)
         },
         {
-          headers: { "x-api-key": apiKey }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
       // Limpiar y Recargar
       setName("");
+      setEmail("");
+      setPassword("");
+      setRole("VENDEDOR");
       setCode("");
       setCommissionPercentage("5.0");
       setShowAddModal(false);
@@ -97,8 +108,8 @@ export default function AdminEmployees() {
   };
 
   const handleToggleStatus = async (id: number, currentStatus: number) => {
-    const apiKey = sessionStorage.getItem("admin_api_key");
-    if (!apiKey) return;
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
     const newStatus = currentStatus === 1 ? 0 : 1;
 
@@ -108,7 +119,7 @@ export default function AdminEmployees() {
         `/api/v1/employees/${id}`,
         { status: newStatus },
         {
-          headers: { "x-api-key": apiKey }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
       fetchEmployees();
@@ -126,13 +137,13 @@ export default function AdminEmployees() {
     )
       return;
 
-    const apiKey = sessionStorage.getItem("admin_api_key");
-    if (!apiKey) return;
+    const token = localStorage.getItem("admin_token");
+    if (!token) return;
 
     try {
       setErrorMsg("");
       await axios.delete(`/api/v1/employees/${id}`, {
-        headers: { "x-api-key": apiKey }
+        headers: { Authorization: `Bearer ${token}` }
       });
       fetchEmployees();
     } catch (err: any) {
@@ -143,7 +154,11 @@ export default function AdminEmployees() {
 
   const filteredEmployees = employees.filter((e) => {
     const term = searchQuery.toLowerCase();
-    return e.name.toLowerCase().includes(term) || e.code.toLowerCase().includes(term);
+    return (
+      e.name.toLowerCase().includes(term) ||
+      e.email.toLowerCase().includes(term) ||
+      e.code.toLowerCase().includes(term)
+    );
   });
 
   return (
@@ -155,7 +170,7 @@ export default function AdminEmployees() {
           <div className="relative w-full sm:max-w-xs">
             <input
               type="text"
-              placeholder="Buscar por nombre o código..."
+              placeholder="Buscar por nombre, email o código..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full border border-gray-300 focus:border-blue p-3 outline-none text-sm rounded-xl pl-10"
@@ -184,7 +199,7 @@ export default function AdminEmployees() {
             {errorMsg}
           </div>
         ) : (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden animate__animated animate__fadeIn animate__faster">
             {filteredEmployees.length === 0 ? (
               <div className="text-center py-16 text-gray-400 font-sans text-sm select-none">
                 No se encontraron empleados registrados.
@@ -195,6 +210,8 @@ export default function AdminEmployees() {
                   <thead className="bg-lightnavy uppercase text-[10px] font-bold text-gray-400 tracking-wider select-none">
                     <tr>
                       <th className="p-5">Nombre</th>
+                      <th className="p-5">Email</th>
+                      <th className="p-5">Rol</th>
                       <th className="p-5">Código de Comisión</th>
                       <th className="p-5">Comisión (%)</th>
                       <th className="p-5">Ventas Referidas</th>
@@ -208,6 +225,14 @@ export default function AdminEmployees() {
                       <tr key={emp.id} className="hover:bg-lightnavy/20 transition-colors duration-150">
                         <td className="p-5 font-bold text-navy" style={{ color: "#0B2545" }}>
                           {emp.name}
+                        </td>
+                        <td className="p-5 font-semibold text-gray-500">
+                          {emp.email}
+                        </td>
+                        <td className="p-5 select-none">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${emp.role === "ADMIN" ? "bg-amber-100 text-amber-800" : "bg-green-100 text-green-800"}`}>
+                            {emp.role === "ADMIN" ? "ADMIN" : "VENDEDOR"}
+                          </span>
                         </td>
                         <td className="p-5 font-semibold text-navy uppercase tracking-wider">
                           {emp.code}
@@ -270,14 +295,14 @@ export default function AdminEmployees() {
         {/* Modal de Creación */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 md:p-6" style={{ zIndex: 999999 }}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl flex flex-col max-h-full overflow-hidden animate__animated animate__zoomIn animate__faster">
               <header className="p-6 border-b border-gray-100 flex-shrink-0 flex justify-between items-center">
                 <div>
                   <h3 className="text-xl font-bold text-navy font-serif uppercase tracking-wide" style={{ color: "#0B2545" }}>
                     Registrar Nuevo Empleado
                   </h3>
-                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
-                    Control de Comisiones B2B
+                  <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-semibold">
+                    Acceso y Control de Comisiones B2B
                   </p>
                 </div>
                 <button
@@ -291,7 +316,7 @@ export default function AdminEmployees() {
               <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
                 <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs font-sans">
                   {submitError && (
-                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center">
+                    <div className="mb-4 bg-red bg-opacity-10 border border-red border-opacity-20 text-red text-xs font-semibold py-3 px-4 rounded-xl text-center animate-pulse">
                       {submitError}
                     </div>
                   )}
@@ -311,6 +336,36 @@ export default function AdminEmployees() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                        Correo Electrónico (Obligatorio / Único para Login)
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="maria.lopez@destiny.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                        Contraseña de Acceso (Obligatorio)
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
                         Código de Comisión Único (Obligatorio)
@@ -339,6 +394,20 @@ export default function AdminEmployees() {
                         onChange={(e) => setCommissionPercentage(e.target.value)}
                         className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-400 font-bold uppercase tracking-wider mb-2">
+                        Rol Asignado en el Sistema
+                      </label>
+                      <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        className="w-full border border-gray-300 focus:border-blue p-3 outline-none rounded-xl text-sm bg-white"
+                      >
+                        <option value="VENDEDOR">VENDEDOR</option>
+                        <option value="ADMIN">ADMINISTRADOR</option>
+                      </select>
                     </div>
                   </div>
                 </div>

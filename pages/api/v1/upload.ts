@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Validar credenciales de administrador de forma estricta (Regla 13)
-  if (!validateAdminApiKey(req, res)) return;
+  if (!await validateAdminApiKey(req, res)) return;
 
   try {
     const { base64Data, filename } = req.body;

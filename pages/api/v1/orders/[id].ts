@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
-import { validateAdminApiKey } from "@/lib/security";
+import { validateAdminOrVendedorApiKey } from "@/lib/security";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Proteger estrictamente todas las operaciones individuales de pedidos con API Key
-  if (!validateAdminApiKey(req, res)) return;
+  // Proteger operaciones individuales de pedidos con validación de rol admin o vendedor
+  if (!await validateAdminOrVendedorApiKey(req, res)) return;
 
   const { id } = req.query;
   const orderNum = parseInt(id as string, 10);

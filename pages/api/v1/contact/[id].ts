@@ -4,7 +4,7 @@ import { validateAdminApiKey } from "@/lib/security";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Proteger estrictamente todas las acciones individuales de consulta de contacto con API Key
-  if (!validateAdminApiKey(req, res)) return;
+  if (!await validateAdminApiKey(req, res)) return;
 
   const { id } = req.query;
   const contactId = parseInt(id as string, 10);

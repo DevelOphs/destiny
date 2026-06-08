@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { validateAdminApiKey } from "@/lib/security";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!validateAdminApiKey(req, res)) return;
+  if (!await validateAdminApiKey(req, res)) return;
 
   const { id } = req.query;
   const couponId = parseInt(id as string, 10);

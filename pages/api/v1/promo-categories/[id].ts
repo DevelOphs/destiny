@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === "PUT") {
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const { title, imageUrl, imageUrlTablet, link, status } = req.body;
@@ -56,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ success: false, error: "Internal Server Error" });
     }
   } else if (req.method === "DELETE") {
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const existing = await prisma.promoCategory.findUnique({

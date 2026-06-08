@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import prisma from "@/lib/prisma";
-import { validateAdminApiKey } from "@/lib/security";
+import { validateAdminOrVendedorApiKey } from "@/lib/security";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
@@ -174,8 +174,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ success: false, error: error.message || "Internal Server Error" });
     }
   } else if (req.method === "GET") {
-    // Proteger estrictamente la lectura de pedidos corporativos con API Key
-    if (!validateAdminApiKey(req, res)) return;
+    // Proteger lectura de pedidos con validación de rol admin o vendedor
+    if (!await validateAdminOrVendedorApiKey(req, res)) return;
 
     try {
       const orders = await prisma.order.findMany({

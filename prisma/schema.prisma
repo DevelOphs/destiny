@@ -105,11 +105,14 @@ model Coupon {
 model Employee {
   id                   Int      @id @default(autoincrement())
   name                 String
+  email                String   @unique
+  passwordHash         String
   code                 String   @unique
   commissionPercentage Float    @default(5.0)
+  role                 String   @default("VENDEDOR") // Roles: "ADMIN" o "VENDEDOR"
   totalSalesCount      Int      @default(0)
   totalCommissions     Float    @default(0.0)
-  status               Int      @default(1) // 1 = activo, 0 = inactivo
+  status               Int      @default(1)
   createdAt            DateTime @default(now())
 }
 

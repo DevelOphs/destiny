@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } else if (req.method === "GET") {
     // Proteger estrictamente la lectura de consultas administrativas con API Key
-    if (!validateAdminApiKey(req, res)) return;
+    if (!await validateAdminApiKey(req, res)) return;
 
     try {
       const contacts = await prisma.contact.findMany({
