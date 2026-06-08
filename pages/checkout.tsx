@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import axios from "axios";
 import { GetStaticProps } from "next";
@@ -184,6 +184,7 @@ const ShoppingCart = () => {
   // ==========================================
   const [isCardModalOpen, setIsCardModalOpen] = useState(false); // Apertura de modal PayPhone
   const [copiedBank, setCopiedBank] = useState<string | null>(null); // Copiado rápido bancario
+  const orderPlacedRef = useRef(false);
 
   // ==========================================
   // CÓMPUTOS Y VALIDACIONES EN TIEMPO REAL
@@ -279,7 +280,7 @@ const ShoppingCart = () => {
   // EVENTOS DEL SISTEMA Y REGISTRO DE ÓRDENES
   // ==========================================
   useEffect(() => {
-    if (!isOrdering) return;
+    if (!isOrdering || completedOrder) return;
     setErrorMsg("");
 
     if (paymentMethod === "WHATSAPP_QUOTE") {
@@ -309,6 +310,9 @@ const ShoppingCart = () => {
     if (!auth.user) registerUser();
 
     const makeOrder = async () => {
+      if (orderPlacedRef.current) return;
+      orderPlacedRef.current = true;
+
       const productsPayload = cart.map((item) => ({
         id: item.id,
         quantity: item.qty,
@@ -338,18 +342,20 @@ const ShoppingCart = () => {
           clearCart!();
           setIsOrdering(false);
         } else {
+          orderPlacedRef.current = false; // reset en caso de fallo para permitir reintento
           setOrderError("error_occurs");
           setIsOrdering(false);
         }
       } catch (err: any) {
         console.error("Order creation failed:", err);
+        orderPlacedRef.current = false; // reset en caso de fallo para permitir reintento
         const msg = err.response?.data?.error || "Ocurrió un error al procesar el pedido. Inténtelo de nuevo.";
         setOrderError(msg);
         setIsOrdering(false);
       }
     };
     if (auth.user) makeOrder();
-  }, [isOrdering, completedOrder, auth.user]);
+  }, [isOrdering, auth.user]);
 
   // Vincula los campos del formulario si existe una sesión de usuario activa
   useEffect(() => {
